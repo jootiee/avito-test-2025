@@ -1,11 +1,19 @@
 package main
 
 import (
-	"github.com/jootiee/avito-test-2025/pkg/httpserver"
+	"log"
+
+	"github.com/joho/godotenv"
+	"github.com/jootiee/avito-test-2025/internal/config"
+	"github.com/jootiee/avito-test-2025/internal/transport"
 )
 
 func main() {
-	if err := httpserver.Start(); err != nil {
-		return
+	_ = godotenv.Load()
+	config := config.NewConfig()
+	config.LoadFromEnv()
+
+	if err := transport.StartHTTPServer(config); err != nil {
+		log.Fatal(err)
 	}
 }
