@@ -6,15 +6,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jootiee/avito-test-2025/internal/domain"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
 type teamRepo struct {
 	pool     *pgxpool.Pool
-	userRepo repository.UserRepository
+	userRepo *userRepo
 }
 
-func NewTeamRepository(pool *pgxpool.Pool, userRepo repository.UserRepository) repository.TeamRepository {
+func NewTeamRepository(pool *pgxpool.Pool, userRepo *userRepo) *teamRepo {
 	return &teamRepo{
 		pool:     pool,
 		userRepo: userRepo,

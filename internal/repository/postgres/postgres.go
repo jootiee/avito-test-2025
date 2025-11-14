@@ -5,15 +5,14 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
 type PostgresDB struct {
 	pool *pgxpool.Pool
 
-	Team repository.TeamRepository
-	User repository.UserRepository
-	PR   repository.PRRepository
+	Team *teamRepo
+	User *userRepo
+	PR   *prRepo
 }
 
 // NewPostgresDB creates a new PostgreSQL connection pool and initializes all repositories

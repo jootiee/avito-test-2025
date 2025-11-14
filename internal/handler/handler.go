@@ -8,24 +8,23 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jootiee/avito-test-2025/internal/dto"
-	"github.com/jootiee/avito-test-2025/internal/service"
 )
 
-// Holds all HTTP handlers and their dependencies
+// Handler holds all HTTP handlers and their dependencies.
 type Handler struct {
 	router *mux.Router
 	logger *logrus.Logger
 
-	teamService *service.TeamService
-	userService *service.UserService
-	prService   *service.PRService
+	teamService TeamService
+	userService UserService
+	prService   PRService
 }
 
-// Creates a new handler with all dependencies
-func NewHandler(
-	teamService *service.TeamService,
-	userService *service.UserService,
-	prService *service.PRService,
+// New returns a new handler instance with all dependencies.
+func New(
+	teamService TeamService,
+	userService UserService,
+	prService PRService,
 	logger *logrus.Logger,
 ) *Handler {
 	h := &Handler{
@@ -40,12 +39,12 @@ func NewHandler(
 	return h
 }
 
-// Implements http.Handler
+// ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-// Sets up all API routes
+// configureRoutes sets up all API routes
 func (h *Handler) configureRoutes() {
 	h.router.HandleFunc("/", h.handleRoot()).Methods("GET")
 	h.router.HandleFunc("/health", h.handleHealth()).Methods("GET")
@@ -61,7 +60,7 @@ func (h *Handler) configureRoutes() {
 	h.router.HandleFunc("/pullRequest/reassign", h.handleReassign()).Methods("POST")
 }
 
-// Writes JSON response
+// writeJSON writes JSON response
 func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -70,12 +69,12 @@ func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	}
 }
 
-// Writes error response in API format
+// writeError writes error response in API format
 func (h *Handler) writeError(w http.ResponseWriter, status int, code, message string) {
 	h.writeJSON(w, status, dto.NewAPIError(code, message))
 }
 
-// Returns a simple root endpoint
+// handleRoot returns a simple root endpoint
 func (h *Handler) handleRoot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		h.writeJSON(w, http.StatusOK, map[string]string{"message": "PR Reviewer Assignment Service"})

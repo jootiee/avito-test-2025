@@ -7,18 +7,41 @@ import (
 	"time"
 
 	"github.com/jootiee/avito-test-2025/internal/domain"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
-// Handles pull request business logic
-type PRService struct {
-	prRepo   repository.PRRepository
-	userRepo repository.UserRepository
-	teamRepo repository.TeamRepository
+// PRRepository defines the interface for pull request data access
+type PRRepository interface {
+	CreatePR(ctx context.Context, pr *domain.PullRequest) error
+	GetPR(ctx context.Context, prID string) (*domain.PullRequest, error)
+	UpdatePR(ctx context.Context, pr *domain.PullRequest) error
+	PRExists(ctx context.Context, prID string) (bool, error)
+	GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error)
 }
 
-// Creates a new PR service
-func NewPRService(prRepo repository.PRRepository, userRepo repository.UserRepository, teamRepo repository.TeamRepository) *PRService {
+// UserRepository defines the interface for user data access
+type UserRepository interface {
+	UpsertUser(ctx context.Context, user *domain.User) error
+	GetUser(ctx context.Context, userID string) (*domain.User, error)
+	SetUserActive(ctx context.Context, userID string, isActive bool) error
+	GetTeamMembers(ctx context.Context, teamName string) ([]domain.User, error)
+}
+
+// TeamRepository defines the interface for team data access
+type TeamRepository interface {
+	CreateTeam(ctx context.Context, team *domain.Team) error
+	GetTeam(ctx context.Context, teamName string) (*domain.Team, error)
+	TeamExists(ctx context.Context, teamName string) (bool, error)
+}
+
+// PRService handles pull request business logic
+type PRService struct {
+	prRepo   PRRepository
+	userRepo UserRepository
+	teamRepo TeamRepository
+}
+
+// NewPRService creates a new PR service
+func NewPRService(prRepo PRRepository, userRepo UserRepository, teamRepo TeamRepository) *PRService {
 	return &PRService{
 		prRepo:   prRepo,
 		userRepo: userRepo,
@@ -26,7 +49,7 @@ func NewPRService(prRepo repository.PRRepository, userRepo repository.UserReposi
 	}
 }
 
-// Creates a new pull request and auto-assigns reviewers
+// CreatePR creates a new pull request and auto-assigns reviewers
 func (s *PRService) CreatePR(ctx context.Context, prID, prName, authorID string) (*domain.PullRequest, error) {
 	exists, err := s.prRepo.PRExists(ctx, prID)
 	if err != nil {
@@ -76,7 +99,7 @@ func (s *PRService) CreatePR(ctx context.Context, prID, prName, authorID string)
 	return pr, nil
 }
 
-// Marks a PR as merged
+// MergePR marks a PR as merged
 func (s *PRService) MergePR(ctx context.Context, prID string) (*domain.PullRequest, error) {
 	pr, err := s.prRepo.GetPR(ctx, prID)
 	if err != nil {
@@ -103,7 +126,7 @@ func (s *PRService) MergePR(ctx context.Context, prID string) (*domain.PullReque
 	return pr, nil
 }
 
-// Replaces a reviewer with another from the same team
+// ReassignReviewer replaces a reviewer with another from the same team
 func (s *PRService) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*domain.PullRequest, string, error) {
 	pr, err := s.prRepo.GetPR(ctx, prID)
 	if err != nil {

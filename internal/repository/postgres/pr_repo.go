@@ -6,14 +6,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jootiee/avito-test-2025/internal/domain"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
 type prRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewPRRepository(pool *pgxpool.Pool) repository.PRRepository {
+func NewPRRepository(pool *pgxpool.Pool) *prRepo {
 	return &prRepo{pool: pool}
 }
 

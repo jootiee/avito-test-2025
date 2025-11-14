@@ -8,7 +8,7 @@ import (
 	"github.com/jootiee/avito-test-2025/internal/dto"
 )
 
-// Creates a new pull request with auto-assigned reviewers.
+// handleCreatePR creates a new pull request with auto-assigned reviewers.
 func (h *Handler) handleCreatePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.CreatePRRequest

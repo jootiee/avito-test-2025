@@ -13,7 +13,7 @@ import (
 	"github.com/jootiee/avito-test-2025/internal/service"
 )
 
-// Initializes and starts the HTTP server
+// StartHTTPServer initializes and starts the HTTP server
 func StartHTTPServer(cfg *config.Config) error {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -31,7 +31,7 @@ func StartHTTPServer(cfg *config.Config) error {
 	userService := service.NewUserService(db.User, db.PR)
 	prService := service.NewPRService(db.PR, db.User, db.Team)
 
-	h := handler.NewHandler(teamService, userService, prService, logger)
+	h := handler.New(teamService, userService, prService, logger)
 
 	log.Printf("Starting server on %s", cfg.BindAddr)
 	if err := http.ListenAndServe(cfg.BindAddr, h); err != nil {

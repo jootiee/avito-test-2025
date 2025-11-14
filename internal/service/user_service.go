@@ -6,24 +6,23 @@ import (
 	"errors"
 
 	"github.com/jootiee/avito-test-2025/internal/domain"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
-// Handles user-related business logic
+// UserService handles user-related business logic
 type UserService struct {
-	userRepo repository.UserRepository
-	prRepo   repository.PRRepository
+	userRepo UserRepository
+	prRepo   PRRepository
 }
 
-// Creates a new user service
-func NewUserService(userRepo repository.UserRepository, prRepo repository.PRRepository) *UserService {
+// NewUserService creates a new user service
+func NewUserService(userRepo UserRepository, prRepo PRRepository) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 		prRepo:   prRepo,
 	}
 }
 
-// Updates a user's active status
+// SetUserActive updates a user's active status
 func (s *UserService) SetUserActive(ctx context.Context, userID string, isActive bool) (*domain.User, error) {
 	user, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
@@ -41,7 +40,7 @@ func (s *UserService) SetUserActive(ctx context.Context, userID string, isActive
 	return user, nil
 }
 
-// Retrieves a user by ID
+// GetUser retrieves a user by ID
 func (s *UserService) GetUser(ctx context.Context, userID string) (*domain.User, error) {
 	user, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
@@ -53,7 +52,7 @@ func (s *UserService) GetUser(ctx context.Context, userID string) (*domain.User,
 	return user, nil
 }
 
-// Retrieves all PRs where user is assigned as reviewer
+// GetUserReviews retrieves all PRs where user is assigned as reviewer
 func (s *UserService) GetUserReviews(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
 	prs, err := s.prRepo.GetPRsByReviewer(ctx, userID)
 	if err != nil {

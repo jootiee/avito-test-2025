@@ -4,7 +4,7 @@ import (
 	"math/rand"
 )
 
-// Selects up to max reviewers randomly from candidates
+// SelectRandomReviewers selects up to max reviewers randomly from candidates
 func SelectRandomReviewers(candidates []string, max int) []string {
 	if len(candidates) == 0 {
 		return []string{}
@@ -21,7 +21,7 @@ func SelectRandomReviewers(candidates []string, max int) []string {
 	return candidates[:max]
 }
 
-// Returns only active users, excluding specified IDs
+// FilterActiveCandidates returns only active users, excluding specified IDs
 func FilterActiveCandidates(users []string, activeMap map[string]bool, excludeIDs ...string) []string {
 	excluded := make(map[string]struct{})
 	for _, id := range excludeIDs {

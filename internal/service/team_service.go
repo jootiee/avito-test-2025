@@ -6,24 +6,23 @@ import (
 	"errors"
 
 	"github.com/jootiee/avito-test-2025/internal/domain"
-	"github.com/jootiee/avito-test-2025/internal/repository"
 )
 
-// Handles team-related business logic
+// TeamService handles team-related business logic
 type TeamService struct {
-	teamRepo repository.TeamRepository
-	userRepo repository.UserRepository
+	teamRepo TeamRepository
+	userRepo UserRepository
 }
 
-// Creates a new team service
-func NewTeamService(teamRepo repository.TeamRepository, userRepo repository.UserRepository) *TeamService {
+// NewTeamService creates a new team service
+func NewTeamService(teamRepo TeamRepository, userRepo UserRepository) *TeamService {
 	return &TeamService{
 		teamRepo: teamRepo,
 		userRepo: userRepo,
 	}
 }
 
-// Creates a new team and upserts its members
+// CreateTeam creates a new team and upserts its members
 func (s *TeamService) CreateTeam(ctx context.Context, teamName string, members []domain.User) (*domain.Team, error) {
 	exists, err := s.teamRepo.TeamExists(ctx, teamName)
 	if err != nil {
@@ -48,7 +47,7 @@ func (s *TeamService) CreateTeam(ctx context.Context, teamName string, members [
 	return team, nil
 }
 
-// Retrieves a team by name
+// GetTeam retrieves a team by name
 func (s *TeamService) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
 	team, err := s.teamRepo.GetTeam(ctx, teamName)
 	if err != nil {
