@@ -6,8 +6,8 @@ import (
 
 	"github.com/jootiee/avito-test-2025/internal/config"
 	"github.com/jootiee/avito-test-2025/internal/handler"
-	"github.com/jootiee/avito-test-2025/internal/repository/postgres"
 	"github.com/jootiee/avito-test-2025/internal/service"
+	"github.com/jootiee/avito-test-2025/internal/storage"
 	"github.com/jootiee/avito-test-2025/pkg/logger"
 )
 
@@ -15,18 +15,18 @@ import (
 func StartHTTPServer(cfg *config.Config) error {
 	log := logger.New(cfg.LogLevel)
 
-	dbURL := cfg.DatabaseURL
-	db, err := postgres.NewPostgresDB(dbURL)
+	// Initialize storage - the specific implementation (postgres) is decided in storage package
+	store, err := storage.New(cfg.DatabaseURL)
 	if err != nil {
-		return fmt.Errorf("failed to initialize database: %w", err)
+		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	defer db.Close()
+	defer store.Close()
 
 	log.Info("Connected to database")
 
-	teamService := service.NewTeamService(db.Team, db.User)
-	userService := service.NewUserService(db.User, db.PR)
-	prService := service.NewPRService(db.PR, db.User, db.Team)
+	teamService := service.NewTeamService(store.TeamRepo(), store.UserRepo())
+	userService := service.NewUserService(store.UserRepo(), store.PRRepo())
+	prService := service.NewPRService(store.PRRepo(), store.UserRepo(), store.TeamRepo())
 
 	h := handler.New(teamService, userService, prService, log)
 
