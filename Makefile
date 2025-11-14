@@ -1,5 +1,50 @@
+include .env
+export
+
+DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
+DOCKER_DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
+MIGRATE := $(shell which migrate || echo "$(HOME)/go/bin/migrate")
+
 .PHONY: build
 build:
-	go build -v ./cmd/app/main.go
+	go build -v -o main ./cmd/app/main.go
+
+.PHONY: migrate-up
+migrate-up:
+	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" up
+
+.PHONY: migrate-down
+migrate-down:
+	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" down
+
+.PHONY: migrate-down-all
+migrate-down-all:
+	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" down -all
+
+.PHONY: migrate-force
+migrate-force:
+	@read -p "Enter version to force: " version; \
+	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" force $$version
+
+.PHONY: migrate-version
+migrate-version:
+	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" version
+
+.PHONY: migrate-create
+migrate-create:
+	@read -p "Enter migration name: " name; \
+	$(MIGRATE) create -ext sql -dir migrations -seq $$name
+
+.PHONY: migrate-docker-up
+migrate-docker-up:
+	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" up
+
+.PHONY: migrate-docker-down
+migrate-docker-down:
+	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" down
+
+.PHONY: db-shell
+db-shell:
+	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
 .DEFAULT_GOAL := build
