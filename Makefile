@@ -9,6 +9,21 @@ MIGRATE := $(shell which migrate || echo "$(HOME)/go/bin/migrate")
 build:
 	go build -v -o main ./cmd/app/main.go
 
+.PHONY: test
+test:
+	go test -v ./...
+
+.PHONY: test-coverage
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+.PHONY: test-coverage-html
+test-coverage-html:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated at coverage.html"
+
 .PHONY: migrate-up
 migrate-up:
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" up
