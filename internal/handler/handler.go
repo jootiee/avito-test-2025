@@ -5,15 +5,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 
 	"github.com/jootiee/avito-test-2025/internal/dto"
+	"github.com/jootiee/avito-test-2025/pkg/logger"
 )
 
 // Handler holds all HTTP handlers and their dependencies.
 type Handler struct {
 	router *mux.Router
-	logger *logrus.Logger
+	logger logger.Interface
 
 	teamService TeamService
 	userService UserService
@@ -25,7 +25,7 @@ func New(
 	teamService TeamService,
 	userService UserService,
 	prService PRService,
-	logger *logrus.Logger,
+	logger logger.Interface,
 ) *Handler {
 	h := &Handler{
 		router:      mux.NewRouter(),
@@ -44,8 +44,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-// configureRoutes sets up all API routes
+// configureRoutes sets up all API routes and applies middlewares
 func (h *Handler) configureRoutes() {
+	h.router.Use(h.RequestIDMiddleware)
+	h.router.Use(h.LoggingMiddleware)
+
 	h.router.HandleFunc("/", h.handleRoot()).Methods("GET")
 	h.router.HandleFunc("/health", h.handleHealth()).Methods("GET")
 
