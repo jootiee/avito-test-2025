@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"go.uber.org/zap"
@@ -47,8 +46,6 @@ func New(level, format string) *Logger {
 	config.Level = zap.NewAtomicLevelAt(zapLevel)
 	config.EncoderConfig.TimeKey = "timestamp"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-
-	// Use console encoder for pretty printing in development
 	if strings.ToLower(strings.TrimSpace(format)) == "console" {
 		config.Encoding = "console"
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -60,13 +57,6 @@ func New(level, format string) *Logger {
 	return &Logger{
 		logger: sugar,
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }
 
 // Debug -.
