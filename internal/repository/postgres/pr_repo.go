@@ -92,3 +92,51 @@ func (r *prRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain
 	}
 	return prs, rows.Err()
 }
+
+func (r *prRepo) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT reviewer_id, COUNT(*) as assignment_count
+		FROM pull_requests,
+		jsonb_array_elements_text(assigned_reviewers) AS reviewer_id
+		GROUP BY reviewer_id
+		ORDER BY assignment_count DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int)
+	for rows.Next() {
+		var userID string
+		var count int
+		if err := rows.Scan(&userID, &count); err != nil {
+			return nil, err
+		}
+		counts[userID] = count
+	}
+	return counts, rows.Err()
+}
+
+func (r *prRepo) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT pull_request_id, jsonb_array_length(assigned_reviewers) as reviewer_count
+		FROM pull_requests
+		ORDER BY reviewer_count DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[string]int)
+	for rows.Next() {
+		var prID string
+		var count int
+		if err := rows.Scan(&prID, &count); err != nil {
+			return nil, err
+		}
+		counts[prID] = count
+	}
+	return counts, rows.Err()
+}

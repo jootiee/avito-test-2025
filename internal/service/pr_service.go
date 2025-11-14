@@ -16,6 +16,8 @@ type PRRepository interface {
 	UpdatePR(ctx context.Context, pr *domain.PullRequest) error
 	PRExists(ctx context.Context, prID string) (bool, error)
 	GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error)
+	GetUserAssignmentCounts(ctx context.Context) (map[string]int, error)
+	GetPRReviewerCounts(ctx context.Context) (map[string]int, error)
 }
 
 // UserRepository defines the interface for user data access
@@ -228,4 +230,19 @@ func (s *PRService) GetPR(ctx context.Context, prID string) (*domain.PullRequest
 		return nil, err
 	}
 	return pr, nil
+}
+
+// GetStatistics retrieves reviewer assignment statistics
+func (s *PRService) GetStatistics(ctx context.Context) (map[string]int, map[string]int, error) {
+	userCounts, err := s.prRepo.GetUserAssignmentCounts(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	prCounts, err := s.prRepo.GetPRReviewerCounts(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userCounts, prCounts, nil
 }

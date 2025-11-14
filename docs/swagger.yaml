@@ -89,6 +89,13 @@ definitions:
       status:
         $ref: '#/definitions/domain.PRStatus'
     type: object
+  dto.PRStats:
+    properties:
+      pull_request_id:
+        type: string
+      reviewer_count:
+        type: integer
+    type: object
   dto.ReassignRequest:
     properties:
       old_user_id:
@@ -109,6 +116,17 @@ definitions:
         type: boolean
       user_id:
         type: string
+    type: object
+  dto.StatsResponse:
+    properties:
+      pr_stats:
+        items:
+          $ref: '#/definitions/dto.PRStats'
+        type: array
+      user_stats:
+        items:
+          $ref: '#/definitions/dto.UserStats'
+        type: array
     type: object
   dto.TeamAddRequest:
     properties:
@@ -144,6 +162,13 @@ definitions:
         items:
           $ref: '#/definitions/dto.PRShort'
         type: array
+      user_id:
+        type: string
+    type: object
+  dto.UserStats:
+    properties:
+      assignment_count:
+        type: integer
       user_id:
         type: string
     type: object
@@ -281,6 +306,24 @@ paths:
       summary: Reassign a reviewer
       tags:
       - PullRequests
+  /stats:
+    get:
+      description: Returns statistics about reviewer assignments per user and per
+        pull request
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Statistics
+          schema:
+            $ref: '#/definitions/dto.StatsResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get reviewer assignment statistics
+      tags:
+      - Statistics
   /team/add:
     post:
       consumes:

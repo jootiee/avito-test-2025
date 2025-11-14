@@ -56,6 +56,8 @@ func (h *Handler) configureRoutes() {
 	h.router.HandleFunc("/pullRequest/create", h.handleCreatePR()).Methods("POST")
 	h.router.HandleFunc("/pullRequest/merge", h.handleMergePR()).Methods("POST")
 	h.router.HandleFunc("/pullRequest/reassign", h.handleReassign()).Methods("POST")
+
+	h.router.HandleFunc("/stats", h.handleGetStats()).Methods("GET")
 }
 
 func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {

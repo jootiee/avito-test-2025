@@ -206,6 +206,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/stats": {
+            "get": {
+                "description": "Returns statistics about reviewer assignments per user and per pull request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get reviewer assignment statistics",
+                "responses": {
+                    "200": {
+                        "description": "Statistics",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StatsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/add": {
             "post": {
                 "description": "Creates a new team with specified members",
@@ -531,6 +557,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PRStats": {
+            "type": "object",
+            "properties": {
+                "pull_request_id": {
+                    "type": "string"
+                },
+                "reviewer_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.ReassignRequest": {
             "type": "object",
             "properties": {
@@ -561,6 +598,23 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.StatsResponse": {
+            "type": "object",
+            "properties": {
+                "pr_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PRStats"
+                    }
+                },
+                "user_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserStats"
+                    }
                 }
             }
         },
@@ -616,6 +670,17 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.PRShort"
                     }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserStats": {
+            "type": "object",
+            "properties": {
+                "assignment_count": {
+                    "type": "integer"
                 },
                 "user_id": {
                     "type": "string"

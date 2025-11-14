@@ -38,3 +38,21 @@ type UserReviewsResponse struct {
 	UserID       string    `json:"user_id"`
 	PullRequests []PRShort `json:"pull_requests"`
 }
+
+// UserStats represents statistics for a single user
+type UserStats struct {
+	UserID          string `json:"user_id"`
+	AssignmentCount int    `json:"assignment_count"`
+}
+
+// PRStats represents statistics for a single pull request
+type PRStats struct {
+	PullRequestID string `json:"pull_request_id"`
+	ReviewerCount int    `json:"reviewer_count"`
+}
+
+// StatsResponse represents statistics about reviewer assignments
+type StatsResponse struct {
+	UserStats []UserStats `json:"user_stats"`
+	PRStats   []PRStats   `json:"pr_stats"`
+}
