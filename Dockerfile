@@ -3,7 +3,6 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go env -w GOPROXY=https://proxy.golang.org
 
-# Install golang-migrate in build stage
 RUN apk add --no-cache git && \
     go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 

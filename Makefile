@@ -10,19 +10,34 @@ build:
 	go build -v -o main ./cmd/app/main.go
 
 .PHONY: test
-test:
-	go test -v ./...
+test-unit:
+	go test -v ./internal/...
 
 .PHONY: test-coverage
-test-coverage:
-	go test -coverprofile=coverage.out ./...
+test-unit-coverage:
+	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -func=coverage.out
 
 .PHONY: test-coverage-html
-test-coverage-html:
-	go test -coverprofile=coverage.out ./...
+test-unit-coverage-html:
+	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
+
+.PHONY: test-load
+test-load: loadtest-team loadtest-pr loadtest-all
+
+.PHONY: test-load-team
+test-load-tea:
+	@./loadtest/test-team.sh
+
+.PHONY: test-load-pr
+test-load-pr:
+	@./loadtest/test-pr.sh
+
+.PHONY: test-load-all
+test-load-all:
+	@./loadtest/test-all.sh
 
 .PHONY: migrate-up
 migrate-up:
@@ -61,5 +76,10 @@ migrate-docker-down:
 .PHONY: db-shell
 db-shell:
 	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
+.PHONY: clean
+clean:
+	rm *.out
+	rm *.html
 
 .DEFAULT_GOAL := build

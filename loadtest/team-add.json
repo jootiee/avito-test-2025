@@ -1,0 +1,20 @@
+{
+  "team_name": "vegeta_team",
+  "members": [
+    {
+      "user_id": "user1",
+      "username": "alice",
+      "is_active": true
+    },
+    {
+      "user_id": "user2",
+      "username": "bob",
+      "is_active": true
+    },
+    {
+      "user_id": "user3",
+      "username": "charlie",
+      "is_active": true
+    }
+  ]
+}
