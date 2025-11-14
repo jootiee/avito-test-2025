@@ -11,7 +11,7 @@ COPY . .
 RUN go build -o /app ./cmd/app/main.go
 
 FROM alpine:3.18
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates curl
 WORKDIR /app
 COPY --from=build /app /app/server
 COPY --from=build /go/bin/migrate /usr/local/bin/migrate
