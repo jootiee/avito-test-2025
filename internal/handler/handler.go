@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
+	_ "github.com/jootiee/avito-test-2025/docs" // Import generated docs
 	"github.com/jootiee/avito-test-2025/internal/dto"
 	"github.com/jootiee/avito-test-2025/internal/service"
 	"github.com/jootiee/avito-test-2025/pkg/logger"
@@ -41,6 +43,9 @@ func (h *Handler) configureRoutes() {
 
 	h.router.HandleFunc("/", h.handleRoot()).Methods("GET")
 	h.router.HandleFunc("/health", h.handleHealth()).Methods("GET")
+
+	// Swagger documentation
+	h.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	h.router.HandleFunc("/team/add", h.handleAddTeam()).Methods("POST")
 	h.router.HandleFunc("/team/get", h.handleGetTeam()).Methods("GET")

@@ -1,0 +1,406 @@
+basePath: /
+definitions:
+  domain.PRStatus:
+    enum:
+    - OPEN
+    - MERGED
+    type: string
+    x-enum-varnames:
+    - PRStatusOpen
+    - PRStatusMerged
+  domain.PullRequest:
+    properties:
+      assigned_reviewers:
+        items:
+          type: string
+        type: array
+      author_id:
+        type: string
+      createdAt:
+        type: string
+      mergedAt:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+      status:
+        $ref: '#/definitions/domain.PRStatus'
+    type: object
+  domain.Team:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+      team_name:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      is_active:
+        type: boolean
+      team_name:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.CreatePRRequest:
+    properties:
+      author_id:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+    type: object
+  dto.ErrorDetail:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/dto.ErrorDetail'
+    type: object
+  dto.MergeRequest:
+    properties:
+      pull_request_id:
+        type: string
+    type: object
+  dto.PRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/domain.PullRequest'
+    type: object
+  dto.PRShort:
+    properties:
+      author_id:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+      status:
+        $ref: '#/definitions/domain.PRStatus'
+    type: object
+  dto.ReassignRequest:
+    properties:
+      old_user_id:
+        type: string
+      pull_request_id:
+        type: string
+    type: object
+  dto.ReassignResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/domain.PullRequest'
+      replaced_by:
+        type: string
+    type: object
+  dto.SetActiveRequest:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+    type: object
+  dto.TeamAddRequest:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/dto.TeamMemberDTO'
+        type: array
+      team_name:
+        type: string
+    type: object
+  dto.TeamMemberDTO:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.TeamResponse:
+    properties:
+      team:
+        $ref: '#/definitions/domain.Team'
+    type: object
+  dto.UserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
+  dto.UserReviewsResponse:
+    properties:
+      pull_requests:
+        items:
+          $ref: '#/definitions/dto.PRShort'
+        type: array
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Service for automatic PR reviewer assignment based on team membership
+    and workload
+  title: PR Reviewer Assignment Service
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Returns service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+  /prs/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new PR and automatically assigns up to 2 reviewers from
+        the author's team
+      parameters:
+      - description: Pull request details
+        in: body
+        name: pr
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePRRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PRResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Author or team not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: PR already exists
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new pull request
+      tags:
+      - PullRequests
+  /prs/merge:
+    post:
+      consumes:
+      - application/json
+      description: Marks a pull request as merged
+      parameters:
+      - description: PR ID to merge
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MergeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PRResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: PR not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Merge a pull request
+      tags:
+      - PullRequests
+  /prs/reassign:
+    post:
+      consumes:
+      - application/json
+      description: Replaces a reviewer with another active member from the same team
+      parameters:
+      - description: Reassignment details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReassignRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ReassignResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: PR or user not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: PR merged, not assigned, or no candidate
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Reassign a reviewer
+      tags:
+      - PullRequests
+  /teams/add:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new team with specified members
+      parameters:
+      - description: Team details
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TeamAddRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TeamResponse'
+        "400":
+          description: Team already exists
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Add a new team
+      tags:
+      - Teams
+  /teams/get:
+    get:
+      description: Retrieves team information including all members
+      parameters:
+      - description: Team name
+        in: query
+        name: team_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TeamResponse'
+        "400":
+          description: Missing team_name
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Team not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get team details
+      tags:
+      - Teams
+  /users/reviews:
+    get:
+      description: Returns all pull requests where the user is assigned as a reviewer
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserReviewsResponse'
+        "400":
+          description: Missing user_id
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get user's assigned PRs
+      tags:
+      - Users
+  /users/set-active:
+    post:
+      consumes:
+      - application/json
+      description: Updates whether a user is active/available for PR review assignment
+      parameters:
+      - description: User active status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Set user active status
+      tags:
+      - Users
+swagger: "2.0"

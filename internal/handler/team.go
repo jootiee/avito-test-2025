@@ -10,6 +10,16 @@ import (
 )
 
 // handleAddTeam creates a new team with members
+// @Summary Add a new team
+// @Description Creates a new team with specified members
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Param team body dto.TeamAddRequest true "Team details"
+// @Success 201 {object} dto.TeamResponse
+// @Failure 400 {object} dto.ErrorResponse "Team already exists"
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /teams/add [post]
 func (h *Handler) handleAddTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.TeamAddRequest
@@ -43,6 +53,16 @@ func (h *Handler) handleAddTeam() http.HandlerFunc {
 }
 
 // handleGetTeam retrieves a team by name
+// @Summary Get team details
+// @Description Retrieves team information including all members
+// @Tags Teams
+// @Produce json
+// @Param team_name query string true "Team name"
+// @Success 200 {object} dto.TeamResponse
+// @Failure 400 {object} dto.ErrorResponse "Missing team_name"
+// @Failure 404 {object} dto.ErrorResponse "Team not found"
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /teams/get [get]
 func (h *Handler) handleGetTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teamName := r.URL.Query().Get("team_name")

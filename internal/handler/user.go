@@ -9,6 +9,17 @@ import (
 )
 
 // handleSetIsActive updates a user's active status
+// @Summary Set user active status
+// @Description Updates whether a user is active/available for PR review assignment
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body dto.SetActiveRequest true "User active status"
+// @Success 200 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 404 {object} dto.ErrorResponse "User not found"
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /users/set-active [post]
 func (h *Handler) handleSetIsActive() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.SetActiveRequest
@@ -32,6 +43,15 @@ func (h *Handler) handleSetIsActive() http.HandlerFunc {
 }
 
 // handleGetUserReviews returns all PRs where user is assigned as reviewer
+// @Summary Get user's assigned PRs
+// @Description Returns all pull requests where the user is assigned as a reviewer
+// @Tags Users
+// @Produce json
+// @Param user_id query string true "User ID"
+// @Success 200 {object} dto.UserReviewsResponse
+// @Failure 400 {object} dto.ErrorResponse "Missing user_id"
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /users/reviews [get]
 func (h *Handler) handleGetUserReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")

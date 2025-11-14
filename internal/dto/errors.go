@@ -5,6 +5,9 @@ type APIError struct {
 	Error ErrorDetail `json:"error"`
 }
 
+// ErrorResponse is an alias for APIError for Swagger documentation
+type ErrorResponse = APIError
+
 // ErrorDetail contains the error code and message
 type ErrorDetail struct {
 	Code    string `json:"code"`
