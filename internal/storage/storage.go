@@ -15,5 +15,5 @@ type Storage interface {
 	// Repository accessors - return interfaces from service package
 	TeamRepo() service.TeamRepository
 	UserRepo() service.UserRepository
-	PRRepo() service.PRRepository
+	PRRepo() service.PullRequestRepository
 }

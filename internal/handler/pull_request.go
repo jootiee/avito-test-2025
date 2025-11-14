@@ -8,31 +8,31 @@ import (
 	"github.com/jootiee/avito-test-2025/internal/dto"
 )
 
-// handleCreatePR creates a new pull request with auto-assigned reviewers.
+// handleCreatePullRequest creates a new pull request with auto-assigned reviewers.
 // @Summary Create a new pull request
-// @Description Creates a new PR and automatically assigns up to 2 reviewers from the author's team
+// @Description Creates a new Pull Request and automatically assigns up to 2 reviewers from the author's team
 // @Tags PullRequests
 // @Accept json
 // @Produce json
-// @Param pr body dto.CreatePRRequest true "Pull request details"
+// @Param pr body dto.CreatePullRequestRequest true "Pull request details"
 // @Success 201 {object} dto.PRResponse
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
 // @Failure 404 {object} dto.ErrorResponse "Author or team not found"
 // @Failure 409 {object} dto.ErrorResponse "PR already exists"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /pullRequest/create [post]
-func (h *Handler) handleCreatePR() http.HandlerFunc {
+func (h *Handler) handleCreatePullRequest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req dto.CreatePRRequest
+		var req dto.CreatePullRequestRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			h.writeError(w, http.StatusBadRequest, dto.ErrCodeNotFound, "invalid request body")
 			return
 		}
 
-		pr, err := h.service.PR.CreatePR(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
+		pr, err := h.service.PullRequest.Create(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				h.writeError(w, http.StatusConflict, dto.ErrCodePRExists, "PR id already exists")
+				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestExists, "PR id already exists")
 				return
 			}
 			if strings.Contains(err.Error(), "not found") {
@@ -43,11 +43,11 @@ func (h *Handler) handleCreatePR() http.HandlerFunc {
 			return
 		}
 
-		h.writeJSON(w, http.StatusCreated, dto.PRResponse{PR: pr})
+		h.writeJSON(w, http.StatusCreated, dto.PullRequestResponse{PR: pr})
 	}
 }
 
-// handleMergePR marks a PR as merged
+// handleMergePullRequest marks a PR as merged
 // @Summary Merge a pull request
 // @Description Marks a pull request as merged
 // @Tags PullRequests
@@ -59,7 +59,7 @@ func (h *Handler) handleCreatePR() http.HandlerFunc {
 // @Failure 404 {object} dto.ErrorResponse "PR not found"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /pullRequest/merge [post]
-func (h *Handler) handleMergePR() http.HandlerFunc {
+func (h *Handler) handleMergePullRequest() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.MergeRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -67,7 +67,7 @@ func (h *Handler) handleMergePR() http.HandlerFunc {
 			return
 		}
 
-		pr, err := h.service.PR.MergePR(r.Context(), req.PullRequestID)
+		pr, err := h.service.PullRequest.Merge(r.Context(), req.PullRequestID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "pr not found")
@@ -77,7 +77,7 @@ func (h *Handler) handleMergePR() http.HandlerFunc {
 			return
 		}
 
-		h.writeJSON(w, http.StatusOK, dto.PRResponse{PR: pr})
+		h.writeJSON(w, http.StatusOK, dto.PullRequestResponse{PR: pr})
 	}
 }
 
@@ -102,10 +102,10 @@ func (h *Handler) handleReassign() http.HandlerFunc {
 			return
 		}
 
-		pr, newUserID, err := h.service.PR.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
+		pr, newUserID, err := h.service.PullRequest.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
 		if err != nil {
 			if strings.Contains(err.Error(), "merged PR") {
-				h.writeError(w, http.StatusConflict, dto.ErrCodePRMerged, "cannot reassign on merged PR")
+				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestMerged, "cannot reassign on merged PR")
 				return
 			}
 			if strings.Contains(err.Error(), "not assigned") {

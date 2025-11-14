@@ -38,7 +38,7 @@ func (h *Handler) handleAddTeam() http.HandlerFunc {
 			})
 		}
 
-		team, err := h.service.Team.CreateTeam(r.Context(), req.TeamName, members)
+		team, err := h.service.Team.Create(r.Context(), req.TeamName, members)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				h.writeError(w, http.StatusBadRequest, dto.ErrCodeTeamExists, "team_name already exists")
@@ -71,7 +71,7 @@ func (h *Handler) handleGetTeam() http.HandlerFunc {
 			return
 		}
 
-		team, err := h.service.Team.GetTeam(r.Context(), teamName)
+		team, err := h.service.Team.Get(r.Context(), teamName)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "team not found")

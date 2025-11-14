@@ -14,8 +14,8 @@ type UserResponse struct {
 	User *domain.User `json:"user"`
 }
 
-// PRResponse wraps a pull request for API responses
-type PRResponse struct {
+// PullRequestResponse wraps a pull request for API responses
+type PullRequestResponse struct {
 	PR *domain.PullRequest `json:"pr"`
 }
 
@@ -45,14 +45,14 @@ type UserStats struct {
 	AssignmentCount int    `json:"assignment_count"`
 }
 
-// PRStats represents statistics for a single pull request
-type PRStats struct {
+// PullRequestStats represents statistics for a single pull request
+type PullRequestStats struct {
 	PullRequestID string `json:"pull_request_id"`
 	ReviewerCount int    `json:"reviewer_count"`
 }
 
 // StatsResponse represents statistics about reviewer assignments
 type StatsResponse struct {
-	UserStats []UserStats `json:"user_stats"`
-	PRStats   []PRStats   `json:"pr_stats"`
+	UserStats []UserStats        `json:"user_stats"`
+	PRStats   []PullRequestStats `json:"pr_stats"`
 }

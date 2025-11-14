@@ -53,8 +53,8 @@ func (h *Handler) configureRoutes() {
 	h.router.HandleFunc("/users/setIsActive", h.handleSetIsActive()).Methods("POST")
 	h.router.HandleFunc("/users/getReview", h.handleGetUserReviews()).Methods("GET")
 
-	h.router.HandleFunc("/pullRequest/create", h.handleCreatePR()).Methods("POST")
-	h.router.HandleFunc("/pullRequest/merge", h.handleMergePR()).Methods("POST")
+	h.router.HandleFunc("/pullRequest/create", h.handleCreatePullRequest()).Methods("POST")
+	h.router.HandleFunc("/pullRequest/merge", h.handleMergePullRequest()).Methods("POST")
 	h.router.HandleFunc("/pullRequest/reassign", h.handleReassign()).Methods("POST")
 
 	h.router.HandleFunc("/stats", h.handleGetStats()).Methods("GET")
@@ -74,6 +74,6 @@ func (h *Handler) writeError(w http.ResponseWriter, status int, code, message st
 
 func (h *Handler) handleRoot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		h.writeJSON(w, http.StatusOK, map[string]string{"message": "PR Reviewer Assignment Service"})
+		h.writeJSON(w, http.StatusOK, map[string]string{"message": "Pull Request Reviewer Assignment Service"})
 	}
 }

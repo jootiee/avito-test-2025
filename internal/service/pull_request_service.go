@@ -9,8 +9,8 @@ import (
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-// PRRepository defines the interface for pull request data access
-type PRRepository interface {
+// PullRequestRepository defines the interface for pull request data access
+type PullRequestRepository interface {
 	CreatePR(ctx context.Context, pr *domain.PullRequest) error
 	GetPR(ctx context.Context, prID string) (*domain.PullRequest, error)
 	UpdatePR(ctx context.Context, pr *domain.PullRequest) error
@@ -35,25 +35,29 @@ type TeamRepository interface {
 	TeamExists(ctx context.Context, teamName string) (bool, error)
 }
 
-// PRService handles pull request business logic
-type PRService struct {
-	prRepo   PRRepository
-	userRepo UserRepository
-	teamRepo TeamRepository
+// PullRequestService handles pull request business logic
+type PullRequestService struct {
+	pullRequestRepo PullRequestRepository
+	userRepo        UserRepository
+	teamRepo        TeamRepository
 }
 
-// NewPRService creates a new PR service
-func NewPRService(prRepo PRRepository, userRepo UserRepository, teamRepo TeamRepository) *PRService {
-	return &PRService{
-		prRepo:   prRepo,
-		userRepo: userRepo,
-		teamRepo: teamRepo,
+// NewPullRequestService creates a new PullRequest service
+func NewPullRequestService(
+	pullRequestRepo PullRequestRepository,
+	userRepo UserRepository,
+	teamRepo TeamRepository,
+) *PullRequestService {
+	return &PullRequestService{
+		pullRequestRepo: pullRequestRepo,
+		userRepo:        userRepo,
+		teamRepo:        teamRepo,
 	}
 }
 
-// CreatePR creates a new pull request and auto-assigns reviewers
-func (s *PRService) CreatePR(ctx context.Context, prID, prName, authorID string) (*domain.PullRequest, error) {
-	exists, err := s.prRepo.PRExists(ctx, prID)
+// Create creates a new pull request and auto-assigns reviewers
+func (s *PullRequestService) Create(ctx context.Context, prID, prName, authorID string) (*domain.PullRequest, error) {
+	exists, err := s.pullRequestRepo.PRExists(ctx, prID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,16 +98,16 @@ func (s *PRService) CreatePR(ctx context.Context, prID, prName, authorID string)
 	pr.CreatedAt = &now
 	pr.AssignedReviewers = assigned
 
-	if err := s.prRepo.CreatePR(ctx, pr); err != nil {
+	if err := s.pullRequestRepo.CreatePR(ctx, pr); err != nil {
 		return nil, err
 	}
 
 	return pr, nil
 }
 
-// MergePR marks a PR as merged
-func (s *PRService) MergePR(ctx context.Context, prID string) (*domain.PullRequest, error) {
-	pr, err := s.prRepo.GetPR(ctx, prID)
+// Merge marks a PR as merged
+func (s *PullRequestService) Merge(ctx context.Context, prID string) (*domain.PullRequest, error) {
+	pr, err := s.pullRequestRepo.GetPR(ctx, prID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("PR not found")
@@ -121,7 +125,7 @@ func (s *PRService) MergePR(ctx context.Context, prID string) (*domain.PullReque
 	pr.Status = domain.PRStatusMerged
 	pr.MergedAt = &now
 
-	if err := s.prRepo.UpdatePR(ctx, pr); err != nil {
+	if err := s.pullRequestRepo.UpdatePR(ctx, pr); err != nil {
 		return nil, err
 	}
 
@@ -129,8 +133,8 @@ func (s *PRService) MergePR(ctx context.Context, prID string) (*domain.PullReque
 }
 
 // ReassignReviewer replaces a reviewer with another from the same team
-func (s *PRService) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*domain.PullRequest, string, error) {
-	pr, err := s.prRepo.GetPR(ctx, prID)
+func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUserID string) (*domain.PullRequest, string, error) {
+	pr, err := s.pullRequestRepo.GetPR(ctx, prID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", errors.New("PR not found")
@@ -213,16 +217,16 @@ func (s *PRService) ReassignReviewer(ctx context.Context, prID, oldUserID string
 	}
 
 	// Update PR
-	if err := s.prRepo.UpdatePR(ctx, pr); err != nil {
+	if err := s.pullRequestRepo.UpdatePR(ctx, pr); err != nil {
 		return nil, "", err
 	}
 
 	return pr, newUserID, nil
 }
 
-// GetPR retrieves a PR by ID
-func (s *PRService) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
-	pr, err := s.prRepo.GetPR(ctx, prID)
+// Get retrieves a PR by ID
+func (s *PullRequestService) Get(ctx context.Context, prID string) (*domain.PullRequest, error) {
+	pr, err := s.pullRequestRepo.GetPR(ctx, prID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("PR not found")
@@ -233,13 +237,13 @@ func (s *PRService) GetPR(ctx context.Context, prID string) (*domain.PullRequest
 }
 
 // GetStatistics retrieves reviewer assignment statistics
-func (s *PRService) GetStatistics(ctx context.Context) (map[string]int, map[string]int, error) {
-	userCounts, err := s.prRepo.GetUserAssignmentCounts(ctx)
+func (s *PullRequestService) GetStatistics(ctx context.Context) (map[string]int, map[string]int, error) {
+	userCounts, err := s.pullRequestRepo.GetUserAssignmentCounts(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	prCounts, err := s.prRepo.GetPRReviewerCounts(ctx)
+	prCounts, err := s.pullRequestRepo.GetPRReviewerCounts(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

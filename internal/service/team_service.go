@@ -15,15 +15,18 @@ type TeamService struct {
 }
 
 // NewTeamService creates a new team service
-func NewTeamService(teamRepo TeamRepository, userRepo UserRepository) *TeamService {
+func NewTeamService(
+	teamRepo TeamRepository,
+	userRepo UserRepository,
+) *TeamService {
 	return &TeamService{
 		teamRepo: teamRepo,
 		userRepo: userRepo,
 	}
 }
 
-// CreateTeam creates a new team and upserts its members
-func (s *TeamService) CreateTeam(ctx context.Context, teamName string, members []domain.User) (*domain.Team, error) {
+// Create creates a new team and upserts its members
+func (s *TeamService) Create(ctx context.Context, teamName string, members []domain.User) (*domain.Team, error) {
 	exists, err := s.teamRepo.TeamExists(ctx, teamName)
 	if err != nil {
 		return nil, err
@@ -47,8 +50,8 @@ func (s *TeamService) CreateTeam(ctx context.Context, teamName string, members [
 	return team, nil
 }
 
-// GetTeam retrieves a team by name
-func (s *TeamService) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
+// Get retrieves a team by name
+func (s *TeamService) Get(ctx context.Context, teamName string) (*domain.Team, error) {
 	team, err := s.teamRepo.GetTeam(ctx, teamName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

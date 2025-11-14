@@ -26,10 +26,10 @@ func NewAPIError(code, message string) APIError {
 
 // Error code constants per OpenAPI spec
 const (
-	ErrCodeTeamExists  = "TEAM_EXISTS"
-	ErrCodePRExists    = "PR_EXISTS"
-	ErrCodePRMerged    = "PR_MERGED"
-	ErrCodeNotAssigned = "NOT_ASSIGNED"
-	ErrCodeNoCandidate = "NO_CANDIDATE"
-	ErrCodeNotFound    = "NOT_FOUND"
+	ErrCodeTeamExists        = "TEAM_EXISTS"
+	ErrCodePullRequestExists = "PR_EXISTS"
+	ErrCodePullRequestMerged = "PR_MERGED"
+	ErrCodeNotAssigned       = "NOT_ASSIGNED"
+	ErrCodeNoCandidate       = "NO_CANDIDATE"
+	ErrCodeNotFound          = "NOT_FOUND"
 )

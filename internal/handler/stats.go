@@ -18,7 +18,7 @@ func (h *Handler) handleGetStats() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		userCounts, prCounts, err := h.service.PR.GetStatistics(ctx)
+		userCounts, prCounts, err := h.service.PullRequest.GetStatistics(ctx)
 		if err != nil {
 			h.writeError(w, http.StatusInternalServerError, dto.ErrCodeNotFound, "Failed to retrieve statistics")
 			return
@@ -32,9 +32,9 @@ func (h *Handler) handleGetStats() http.HandlerFunc {
 			})
 		}
 
-		prStats := make([]dto.PRStats, 0, len(prCounts))
+		prStats := make([]dto.PullRequestStats, 0, len(prCounts))
 		for prID, count := range prCounts {
-			prStats = append(prStats, dto.PRStats{
+			prStats = append(prStats, dto.PullRequestStats{
 				PullRequestID: prID,
 				ReviewerCount: count,
 			})

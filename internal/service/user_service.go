@@ -10,15 +10,18 @@ import (
 
 // UserService handles user-related business logic
 type UserService struct {
-	userRepo UserRepository
-	prRepo   PRRepository
+	userRepo        UserRepository
+	pullRequestRepo PullRequestRepository
 }
 
 // NewUserService creates a new user service
-func NewUserService(userRepo UserRepository, prRepo PRRepository) *UserService {
+func NewUserService(
+	userRepo UserRepository,
+	pullRequestRepo PullRequestRepository,
+) *UserService {
 	return &UserService{
-		userRepo: userRepo,
-		prRepo:   prRepo,
+		userRepo:        userRepo,
+		pullRequestRepo: pullRequestRepo,
 	}
 }
 
@@ -54,7 +57,7 @@ func (s *UserService) GetUser(ctx context.Context, userID string) (*domain.User,
 
 // GetUserReviews retrieves all PRs where user is assigned as reviewer
 func (s *UserService) GetUserReviews(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
-	prs, err := s.prRepo.GetPRsByReviewer(ctx, userID)
+	prs, err := s.pullRequestRepo.GetPRsByReviewer(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

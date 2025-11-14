@@ -40,6 +40,6 @@ func (s *postgresStorage) UserRepo() service.UserRepository {
 	return s.db.User
 }
 
-func (s *postgresStorage) PRRepo() service.PRRepository {
+func (s *postgresStorage) PRRepo() service.PullRequestRepository {
 	return s.db.PR
 }
