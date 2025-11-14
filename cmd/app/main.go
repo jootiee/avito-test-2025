@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	"github.com/jootiee/avito-test-2025/internal/config"
@@ -18,7 +22,19 @@ func main() {
 	config := config.NewConfig()
 	config.LoadFromEnv()
 
-	if err := transport.StartHTTPServer(config); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		log.Println("Shutdown signal received, initiating graceful shutdown...")
+		cancel()
+	}()
+
+	if err := transport.StartHTTPServer(ctx, config); err != nil {
 		log.Fatal(err)
 	}
 }
