@@ -8,6 +8,7 @@ import (
 type Config struct {
 	BindAddr    string
 	LogLevel    string
+	LogFormat	string
 	DatabaseURL string
 }
 
@@ -15,6 +16,7 @@ func NewConfig() *Config {
 	return &Config{
 		BindAddr: ":8080",
 		LogLevel: "debug",
+		LogFormat: "json",
 	}
 }
 
@@ -24,6 +26,10 @@ func (c *Config) LoadFromEnv() {
 	}
 	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
 		c.LogLevel = logLevel
+	}
+	
+	if logFormat := os.Getenv("LOG_FORMAT"); logFormat != "" {
+		c.LogFormat = logFormat
 	}
 
 	if host := os.Getenv("POSTGRES_HOST"); host != "" {

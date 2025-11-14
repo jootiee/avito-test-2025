@@ -13,7 +13,7 @@ import (
 
 // StartHTTPServer initializes and starts the HTTP server
 func StartHTTPServer(cfg *config.Config) error {
-	log := logger.New(cfg.LogLevel)
+	log := logger.New(cfg.LogLevel, cfg.LogFormat)
 
 	store, err := storage.New(cfg.DatabaseURL)
 	if err != nil {
@@ -27,7 +27,7 @@ func StartHTTPServer(cfg *config.Config) error {
 
 	h := handler.New(svc, log)
 
-	log.Info("Starting server on %s", cfg.BindAddr)
+	log.Info("Starting server", "address", cfg.BindAddr)
 	if err := http.ListenAndServe(cfg.BindAddr, h); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}

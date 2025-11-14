@@ -5,7 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Interface -.
@@ -19,96 +20,95 @@ type Interface interface {
 
 // Logger -.
 type Logger struct {
-	logger *logrus.Logger
+	logger *zap.SugaredLogger
 }
 
 var _ Interface = (*Logger)(nil)
 
-// New -.
-func New(level string) *Logger {
-	var l logrus.Level
+// New creates a logger with the specified level and format.
+// format can be "console" for pretty printing or "json" for production.
+func New(level, format string) *Logger {
+	var zapLevel zapcore.Level
 
 	switch strings.ToLower(level) {
 	case "error":
-		l = logrus.ErrorLevel
+		zapLevel = zapcore.ErrorLevel
 	case "warn":
-		l = logrus.WarnLevel
+		zapLevel = zapcore.WarnLevel
 	case "info":
-		l = logrus.InfoLevel
+		zapLevel = zapcore.InfoLevel
 	case "debug":
-		l = logrus.DebugLevel
+		zapLevel = zapcore.DebugLevel
 	default:
-		l = logrus.InfoLevel
+		zapLevel = zapcore.InfoLevel
 	}
 
-	// logger := zerolog.New(os.Stdout).With().Timestamp().CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).Logger()
-	logger := logrus.New()
-	logger.Level = l
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zapLevel)
+	config.EncoderConfig.TimeKey = "timestamp"
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	// Use console encoder for pretty printing in development
+	if strings.ToLower(strings.TrimSpace(format)) == "console" {
+		config.Encoding = "console"
+		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	}
+
+	logger, _ := config.Build()
+	sugar := logger.Sugar()
 
 	return &Logger{
-		logger: logger,
+		logger: sugar,
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 // Debug -.
 func (l *Logger) Debug(message interface{}, args ...interface{}) {
-	l.msg("debug", message, args...)
+	l.msg(l.logger.Debugw, message, args...)
 }
 
 // Info -.
 func (l *Logger) Info(message string, args ...interface{}) {
-	l.log(message, args...)
+	if len(args) == 0 {
+		l.logger.Info(message)
+	} else {
+		l.logger.Infow(message, args...)
+	}
 }
 
 // Warn -.
 func (l *Logger) Warn(message string, args ...interface{}) {
-	l.log(message, args...)
+	if len(args) == 0 {
+		l.logger.Warn(message)
+	} else {
+		l.logger.Warnw(message, args...)
+	}
 }
 
 // Error -.
 func (l *Logger) Error(message interface{}, args ...interface{}) {
-	if l.logger.GetLevel() == logrus.DebugLevel {
-		l.Debug(message, args...)
-	}
-
-	l.msg("error", message, args...)
+	l.msg(l.logger.Errorw, message, args...)
 }
 
 // Fatal -.
 func (l *Logger) Fatal(message interface{}, args ...interface{}) {
-	l.msg("fatal", message, args...)
-
-	os.Exit(1)
+	l.msg(l.logger.Fatalw, message, args...)
 }
 
-func (l *Logger) log(message string, args ...interface{}) {
-	if len(args) == 0 {
-		l.logger.Info(message)
-		return
-	}
-
-	// Support structured logging with key-value pairs
-	fields := logrus.Fields{}
-	for i := 0; i < len(args)-1; i += 2 {
-		if key, ok := args[i].(string); ok {
-			fields[key] = args[i+1]
-		}
-	}
-
-	if len(fields) > 0 {
-		l.logger.WithFields(fields).Info(message)
-	} else {
-		l.logger.Info(message)
-	}
-}
-
-func (l *Logger) msg(level string, message interface{}, args ...interface{}) {
+func (l *Logger) msg(logFunc func(string, ...interface{}), message interface{}, args ...interface{}) {
 	switch msg := message.(type) {
 	case error:
-		l.log(msg.Error(), args...)
+		logFunc(msg.Error(), args...)
 	case string:
-		l.log(msg, args...)
+		logFunc(msg, args...)
 	default:
-		l.log(fmt.Sprintf("%s message %v has unknown type %v", level, message, msg), args...)
+		logFunc(fmt.Sprintf("%v", message), args...)
 	}
 }
