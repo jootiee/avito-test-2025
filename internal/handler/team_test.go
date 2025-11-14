@@ -273,3 +273,21 @@ func (m *mockPRRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*do
 	}
 	return prs, nil
 }
+
+func (m *mockPRRepo) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
+	counts := make(map[string]int)
+	for _, pr := range m.prs {
+		for _, reviewer := range pr.AssignedReviewers {
+			counts[reviewer]++
+		}
+	}
+	return counts, nil
+}
+
+func (m *mockPRRepo) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
+	counts := make(map[string]int)
+	for prID, pr := range m.prs {
+		counts[prID] = len(pr.AssignedReviewers)
+	}
+	return counts, nil
+}

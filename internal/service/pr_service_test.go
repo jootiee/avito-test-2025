@@ -518,3 +518,102 @@ func TestPRService_GetPR_NotFound(t *testing.T) {
 		t.Errorf("expected 'PR not found', got %v", err)
 	}
 }
+
+func TestPRService_GetStatistics_Success(t *testing.T) {
+	prRepo := newMockPRRepository()
+	userRepo := newMockUserRepository()
+	teamRepo := newMockTeamRepository()
+	service := NewPRService(prRepo, userRepo, teamRepo)
+
+	ctx := context.Background()
+
+	// Create multiple PRs with different reviewers
+	pr1 := domain.NewPullRequest("pr1", "Feature A", "author1")
+	pr1.AssignedReviewers = []string{"user2", "user3"}
+	prRepo.CreatePR(ctx, pr1)
+
+	pr2 := domain.NewPullRequest("pr2", "Feature B", "author2")
+	pr2.AssignedReviewers = []string{"user2", "user4"}
+	prRepo.CreatePR(ctx, pr2)
+
+	pr3 := domain.NewPullRequest("pr3", "Feature C", "author3")
+	pr3.AssignedReviewers = []string{"user3"}
+	prRepo.CreatePR(ctx, pr3)
+
+	userCounts, prCounts, err := service.GetStatistics(ctx)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Verify user assignment counts
+	if userCounts["user2"] != 2 {
+		t.Errorf("expected user2 to have 2 assignments, got %d", userCounts["user2"])
+	}
+
+	if userCounts["user3"] != 2 {
+		t.Errorf("expected user3 to have 2 assignments, got %d", userCounts["user3"])
+	}
+
+	if userCounts["user4"] != 1 {
+		t.Errorf("expected user4 to have 1 assignment, got %d", userCounts["user4"])
+	}
+
+	// Verify PR reviewer counts
+	if prCounts["pr1"] != 2 {
+		t.Errorf("expected pr1 to have 2 reviewers, got %d", prCounts["pr1"])
+	}
+
+	if prCounts["pr2"] != 2 {
+		t.Errorf("expected pr2 to have 2 reviewers, got %d", prCounts["pr2"])
+	}
+
+	if prCounts["pr3"] != 1 {
+		t.Errorf("expected pr3 to have 1 reviewer, got %d", prCounts["pr3"])
+	}
+}
+
+func TestPRService_GetStatistics_EmptyData(t *testing.T) {
+	prRepo := newMockPRRepository()
+	userRepo := newMockUserRepository()
+	teamRepo := newMockTeamRepository()
+	service := NewPRService(prRepo, userRepo, teamRepo)
+
+	ctx := context.Background()
+
+	userCounts, prCounts, err := service.GetStatistics(ctx)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(userCounts) != 0 {
+		t.Errorf("expected empty user counts, got %d entries", len(userCounts))
+	}
+
+	if len(prCounts) != 0 {
+		t.Errorf("expected empty PR counts, got %d entries", len(prCounts))
+	}
+}
+
+func TestPRService_GetStatistics_RepositoryError(t *testing.T) {
+	prRepo := newMockPRRepository()
+	userRepo := newMockUserRepository()
+	teamRepo := newMockTeamRepository()
+	service := NewPRService(prRepo, userRepo, teamRepo)
+
+	ctx := context.Background()
+
+	// Set error for get operation
+	prRepo.getErr = errors.New("database error")
+
+	_, _, err := service.GetStatistics(ctx)
+
+	if err == nil {
+		t.Fatal("expected repository error")
+	}
+
+	if err.Error() != "database error" {
+		t.Errorf("expected 'database error', got %v", err)
+	}
+}
