@@ -13,12 +13,12 @@ build:
 test-unit:
 	go test -v ./internal/...
 
-.PHONY: test-coverage
+.PHONY: test-unit-coverage
 test-unit-coverage:
 	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -func=coverage.out
 
-.PHONY: test-coverage-html
+.PHONY: test-unit-coverage-html
 test-unit-coverage-html:
 	go test -coverprofile=coverage.out ./internal/...
 	go tool cover -html=coverage.out -o coverage.html
@@ -79,7 +79,6 @@ db-shell:
 
 .PHONY: clean
 clean:
-	rm *.out
-	rm *.html
+	rm *.out *.html
 
 .DEFAULT_GOAL := build
