@@ -7,44 +7,34 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/jootiee/avito-test-2025/internal/dto"
+	"github.com/jootiee/avito-test-2025/internal/service"
 	"github.com/jootiee/avito-test-2025/pkg/logger"
 )
 
-// Handler holds all HTTP handlers and their dependencies.
 type Handler struct {
-	router *mux.Router
-	logger logger.Interface
-
-	teamService TeamService
-	userService UserService
-	prService   PRService
+	router  *mux.Router
+	logger  logger.Interface
+	service *service.Service
 }
 
-// New returns a new handler instance with all dependencies.
 func New(
-	teamService TeamService,
-	userService UserService,
-	prService PRService,
+	svc *service.Service,
 	logger logger.Interface,
 ) *Handler {
 	h := &Handler{
-		router:      mux.NewRouter(),
-		logger:      logger,
-		teamService: teamService,
-		userService: userService,
-		prService:   prService,
+		router:  mux.NewRouter(),
+		logger:  logger,
+		service: svc,
 	}
 
 	h.configureRoutes()
 	return h
 }
 
-// ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-// configureRoutes sets up all API routes and applies middlewares
 func (h *Handler) configureRoutes() {
 	h.router.Use(h.RequestIDMiddleware)
 	h.router.Use(h.LoggingMiddleware)
@@ -63,7 +53,6 @@ func (h *Handler) configureRoutes() {
 	h.router.HandleFunc("/pullRequest/reassign", h.handleReassign()).Methods("POST")
 }
 
-// writeJSON writes JSON response
 func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -72,12 +61,10 @@ func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	}
 }
 
-// writeError writes error response in API format
 func (h *Handler) writeError(w http.ResponseWriter, status int, code, message string) {
 	h.writeJSON(w, status, dto.NewAPIError(code, message))
 }
 
-// handleRoot returns a simple root endpoint
 func (h *Handler) handleRoot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		h.writeJSON(w, http.StatusOK, map[string]string{"message": "PR Reviewer Assignment Service"})

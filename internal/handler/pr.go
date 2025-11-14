@@ -17,7 +17,7 @@ func (h *Handler) handleCreatePR() http.HandlerFunc {
 			return
 		}
 
-		pr, err := h.prService.CreatePR(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
+		pr, err := h.service.PR.CreatePR(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				h.writeError(w, http.StatusConflict, dto.ErrCodePRExists, "PR id already exists")
@@ -35,7 +35,7 @@ func (h *Handler) handleCreatePR() http.HandlerFunc {
 	}
 }
 
-// handleMergePR marks a PR as merged (idempotent)
+// handleMergePR marks a PR as merged
 func (h *Handler) handleMergePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.MergeRequest
@@ -44,7 +44,7 @@ func (h *Handler) handleMergePR() http.HandlerFunc {
 			return
 		}
 
-		pr, err := h.prService.MergePR(r.Context(), req.PullRequestID)
+		pr, err := h.service.PR.MergePR(r.Context(), req.PullRequestID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "pr not found")
@@ -67,7 +67,7 @@ func (h *Handler) handleReassign() http.HandlerFunc {
 			return
 		}
 
-		pr, newUserID, err := h.prService.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
+		pr, newUserID, err := h.service.PR.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
 		if err != nil {
 			if strings.Contains(err.Error(), "merged PR") {
 				h.writeError(w, http.StatusConflict, dto.ErrCodePRMerged, "cannot reassign on merged PR")

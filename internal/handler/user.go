@@ -17,7 +17,7 @@ func (h *Handler) handleSetIsActive() http.HandlerFunc {
 			return
 		}
 
-		user, err := h.userService.SetUserActive(r.Context(), req.UserID, req.IsActive)
+		user, err := h.service.User.SetUserActive(r.Context(), req.UserID, req.IsActive)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "user not found")
@@ -40,13 +40,12 @@ func (h *Handler) handleGetUserReviews() http.HandlerFunc {
 			return
 		}
 
-		prs, err := h.userService.GetUserReviews(r.Context(), userID)
+		prs, err := h.service.User.GetUserReviews(r.Context(), userID)
 		if err != nil {
 			h.writeError(w, http.StatusInternalServerError, dto.ErrCodeNotFound, err.Error())
 			return
 		}
 
-		// Convert to short format
 		shorts := make([]dto.PRShort, 0, len(prs))
 		for _, pr := range prs {
 			shorts = append(shorts, dto.PRShort{
