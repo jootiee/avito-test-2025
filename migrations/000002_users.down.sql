@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS users PURGE;
+
+DROP INDEX IF EXISTS idx_users_team;
