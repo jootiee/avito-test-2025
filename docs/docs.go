@@ -38,7 +38,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/prs/create": {
+        "/pullRequest/create": {
             "post": {
                 "description": "Creates a new PR and automatically assigns up to 2 reviewers from the author's team",
                 "consumes": [
@@ -96,7 +96,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/prs/merge": {
+        "/pullRequest/merge": {
             "post": {
                 "description": "Marks a pull request as merged",
                 "consumes": [
@@ -148,7 +148,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/prs/reassign": {
+        "/pullRequest/reassign": {
             "post": {
                 "description": "Replaces a reviewer with another active member from the same team",
                 "consumes": [
@@ -206,7 +206,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/add": {
+        "/team/add": {
             "post": {
                 "description": "Creates a new team with specified members",
                 "consumes": [
@@ -252,7 +252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/teams/get": {
+        "/team/get": {
             "get": {
                 "description": "Retrieves team information including all members",
                 "produces": [
@@ -299,7 +299,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/reviews": {
+        "/users/getReview": {
             "get": {
                 "description": "Returns all pull requests where the user is assigned as a reviewer",
                 "produces": [
@@ -340,7 +340,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/set-active": {
+        "/users/setIsActive": {
             "post": {
                 "description": "Updates whether a user is active/available for PR review assignment",
                 "consumes": [

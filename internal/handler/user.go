@@ -19,7 +19,7 @@ import (
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
 // @Failure 404 {object} dto.ErrorResponse "User not found"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /users/set-active [post]
+// @Router /users/setIsActive [post]
 func (h *Handler) handleSetIsActive() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.SetActiveRequest
@@ -51,7 +51,7 @@ func (h *Handler) handleSetIsActive() http.HandlerFunc {
 // @Success 200 {object} dto.UserReviewsResponse
 // @Failure 400 {object} dto.ErrorResponse "Missing user_id"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /users/reviews [get]
+// @Router /users/getReview [get]
 func (h *Handler) handleGetUserReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")

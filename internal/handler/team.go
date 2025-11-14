@@ -19,7 +19,7 @@ import (
 // @Success 201 {object} dto.TeamResponse
 // @Failure 400 {object} dto.ErrorResponse "Team already exists"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /teams/add [post]
+// @Router /team/add [post]
 func (h *Handler) handleAddTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.TeamAddRequest
@@ -62,7 +62,7 @@ func (h *Handler) handleAddTeam() http.HandlerFunc {
 // @Failure 400 {object} dto.ErrorResponse "Missing team_name"
 // @Failure 404 {object} dto.ErrorResponse "Team not found"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /teams/get [get]
+// @Router /team/get [get]
 func (h *Handler) handleGetTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teamName := r.URL.Query().Get("team_name")

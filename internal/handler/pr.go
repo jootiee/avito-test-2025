@@ -20,7 +20,7 @@ import (
 // @Failure 404 {object} dto.ErrorResponse "Author or team not found"
 // @Failure 409 {object} dto.ErrorResponse "PR already exists"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /prs/create [post]
+// @Router /pullRequest/create [post]
 func (h *Handler) handleCreatePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.CreatePRRequest
@@ -58,7 +58,7 @@ func (h *Handler) handleCreatePR() http.HandlerFunc {
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
 // @Failure 404 {object} dto.ErrorResponse "PR not found"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /prs/merge [post]
+// @Router /pullRequest/merge [post]
 func (h *Handler) handleMergePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.MergeRequest
@@ -93,7 +93,7 @@ func (h *Handler) handleMergePR() http.HandlerFunc {
 // @Failure 404 {object} dto.ErrorResponse "PR or user not found"
 // @Failure 409 {object} dto.ErrorResponse "PR merged, not assigned, or no candidate"
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /prs/reassign [post]
+// @Router /pullRequest/reassign [post]
 func (h *Handler) handleReassign() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req dto.ReassignRequest

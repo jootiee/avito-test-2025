@@ -170,7 +170,7 @@ paths:
       summary: Health check
       tags:
       - Health
-  /prs/create:
+  /pullRequest/create:
     post:
       consumes:
       - application/json
@@ -209,7 +209,7 @@ paths:
       summary: Create a new pull request
       tags:
       - PullRequests
-  /prs/merge:
+  /pullRequest/merge:
     post:
       consumes:
       - application/json
@@ -243,7 +243,7 @@ paths:
       summary: Merge a pull request
       tags:
       - PullRequests
-  /prs/reassign:
+  /pullRequest/reassign:
     post:
       consumes:
       - application/json
@@ -281,7 +281,7 @@ paths:
       summary: Reassign a reviewer
       tags:
       - PullRequests
-  /teams/add:
+  /team/add:
     post:
       consumes:
       - application/json
@@ -311,7 +311,7 @@ paths:
       summary: Add a new team
       tags:
       - Teams
-  /teams/get:
+  /team/get:
     get:
       description: Retrieves team information including all members
       parameters:
@@ -342,7 +342,7 @@ paths:
       summary: Get team details
       tags:
       - Teams
-  /users/reviews:
+  /users/getReview:
     get:
       description: Returns all pull requests where the user is assigned as a reviewer
       parameters:
@@ -369,7 +369,7 @@ paths:
       summary: Get user's assigned PRs
       tags:
       - Users
-  /users/set-active:
+  /users/setIsActive:
     post:
       consumes:
       - application/json
