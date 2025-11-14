@@ -43,8 +43,7 @@ func New(level string) *Logger {
 
 	// logger := zerolog.New(os.Stdout).With().Timestamp().CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).Logger()
 	logger := logrus.New()
-	logger.Level = l	
-	
+	logger.Level = l
 
 	return &Logger{
 		logger: logger,
@@ -83,11 +82,24 @@ func (l *Logger) Fatal(message interface{}, args ...interface{}) {
 }
 
 func (l *Logger) log(message string, args ...interface{}) {
-	// if len(args) == 0 {
+	if len(args) == 0 {
 		l.logger.Info(message)
-	// } else {
-	// 	l.logger.Info(message, args...)
-	// }
+		return
+	}
+
+	// Support structured logging with key-value pairs
+	fields := logrus.Fields{}
+	for i := 0; i < len(args)-1; i += 2 {
+		if key, ok := args[i].(string); ok {
+			fields[key] = args[i+1]
+		}
+	}
+
+	if len(fields) > 0 {
+		l.logger.WithFields(fields).Info(message)
+	} else {
+		l.logger.Info(message)
+	}
 }
 
 func (l *Logger) msg(level string, message interface{}, args ...interface{}) {

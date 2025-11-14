@@ -2,21 +2,18 @@ package transport
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/jootiee/avito-test-2025/internal/config"
 	"github.com/jootiee/avito-test-2025/internal/handler"
 	"github.com/jootiee/avito-test-2025/internal/repository/postgres"
 	"github.com/jootiee/avito-test-2025/internal/service"
+	"github.com/jootiee/avito-test-2025/pkg/logger"
 )
 
 // StartHTTPServer initializes and starts the HTTP server
 func StartHTTPServer(cfg *config.Config) error {
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	log := logger.New(cfg.LogLevel)
 
 	dbURL := cfg.DatabaseURL
 	db, err := postgres.NewPostgresDB(dbURL)
@@ -25,15 +22,15 @@ func StartHTTPServer(cfg *config.Config) error {
 	}
 	defer db.Close()
 
-	log.Println("Connected to database")
+	log.Info("Connected to database")
 
 	teamService := service.NewTeamService(db.Team, db.User)
 	userService := service.NewUserService(db.User, db.PR)
 	prService := service.NewPRService(db.PR, db.User, db.Team)
 
-	h := handler.New(teamService, userService, prService, logger)
+	h := handler.New(teamService, userService, prService, log)
 
-	log.Printf("Starting server on %s", cfg.BindAddr)
+	log.Info("Starting server on %s", cfg.BindAddr)
 	if err := http.ListenAndServe(cfg.BindAddr, h); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}
