@@ -41,6 +41,7 @@
 
 **Технологический стек:**
 - **Go 1.24**
+- **Golangci-lint** - линтер
 - **Gorilla Mux** - HTTP роутер
 - **PostgreSQL** - база данных
 - **pgx** - PostgreSQL драйвер
@@ -54,7 +55,7 @@
 #### Локальная сборка
 ```bash
 # Сборка бинарника
-go build -v ./cmd/app/main.go
+go build -v ./cmd/app/main.go # или make build
 
 # Запуск
 ./main
@@ -65,19 +66,67 @@ go build -v ./cmd/app/main.go
 
 ```bash
 # Сборка образов
-docker compose build
+docker compose -f deploy/docker-compose.yml build
 
 # Запуск сервисов (приложение + PostgreSQL)
-docker compose --env-file .env up
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up
 
 # Запуск в фоновом режиме
-docker compose --env-file .env up -d
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d # или make up
 
 # Остановка
-docker compose down
+docker compose -f deploy/docker-compose.yml down  # или make down
+
+# Прогон миграций
+make migrate-up
 ```
 
 После запуска сервис доступен по адресу `http://localhost:8080`
+
+#### Makefile
+
+```bash
+# Сборка
+make build                    # Компиляция бинарника ./main
+make up                       # Запуск проекта в Docker контейнере и прогон миграций
+make down                     # Остановка Docker контейнера
+
+# Тестирование
+make test                     # Запуск всех тестов (юнит, нагрузочные)
+
+make test-unit                # Запуск юнит-тестов
+make test-unit-coverage       # Тесты с покрытием (консольный вывод)
+make test-unit-coverage-html  # Тесты с HTML отчётом покрытия
+
+# Нагрузочное тестирование
+make test-load                # Все нагрузочные тесты
+make test-load-team           # Нагрузка на эндпоинты команд
+make test-load-pr             # Нагрузка на эндпоинты PR
+make test-load-all            # Комплексный нагрузочный тест
+
+
+# Миграции базы данных
+make migrate-up               # Применить все миграции
+make migrate-down             # Откатить последнюю миграцию
+make migrate-down-all         # Откатить все миграции
+make migrate-version          # Показать текущую версию
+make migrate-create           # Создать новую миграцию (интерактивно)
+make migrate-force            # Принудительно установить версию
+
+# Миграции в Docker
+make migrate-docker-up        # Применить миграции в Docker контейнере
+make migrate-docker-down      # Откатить миграцию в Docker
+
+# База данных
+make db-shell                 # Открыть psql в Docker контейнере
+
+# Линтер
+make lint                     # Линтер (golangci-lint)
+make lint-fix                 # Запуск линтера с флагом --fix
+
+# Очистка
+make clean                    # Удалить сгенерированные файлы (*.out, *.html, main)
+```
 
 ### Документация API
 
@@ -243,6 +292,8 @@ make test-load-all     # Комплексный тест всех эндпоин
 - Успешность запросов > 99%
 - RPS: 100-1000 в зависимости от эндпоинта
 
+*Отчет по результатам тестирования расположен в [loadtest/report.md](loadtest/report.md).*
+
 ### База данных
 
 Проект использует **PostgreSQL** с миграциями для управления схемой.
@@ -317,41 +368,16 @@ DB_NAME=avito_test
    - Новый ревьюер добавляется
    - PR обновляется в БД
 
-#### Работа с Makefile
+### Мои комментарии 
+В процессе разработки были допущены некоторые упущения, связанные с близким дедлайном и недостатком опыта.
+К ним относятся:
+- отсутствие транзакций при работе с БД
+- возможные ошибки в архитектуре приложения. Например, миграции при запуске в контейнере в `docker-compose.yml` запихнуть так и не получилось)
+- не самый оптимальный способ сбора статистики - каждый раз обращаемся к БД и считаем по новой...
 
-```bash
-# Сборка
-make build                    # Компиляция бинарника ./main
+и т.д. 
 
-# Тестирование
-make test-unit                # Запуск юнит-тестов
-make test-unit-coverage       # Тесты с покрытием (консольный вывод)
-make test-unit-coverage-html  # Тесты с HTML отчётом покрытия
-
-# Нагрузочное тестирование
-make test-load                # Все нагрузочные тесты
-make test-load-team           # Нагрузка на эндпоинты команд
-make test-load-pr             # Нагрузка на эндпоинты PR
-make test-load-all            # Комплексный нагрузочный тест
-
-# Миграции базы данных
-make migrate-up               # Применить все миграции
-make migrate-down             # Откатить последнюю миграцию
-make migrate-down-all         # Откатить все миграции
-make migrate-version          # Показать текущую версию
-make migrate-create           # Создать новую миграцию (интерактивно)
-make migrate-force            # Принудительно установить версию
-
-# Миграции в Docker
-make migrate-docker-up        # Применить миграции в Docker контейнере
-make migrate-docker-down      # Откатить миграцию в Docker
-
-# База данных
-make db-shell                 # Открыть psql в Docker контейнере
-
-# Очистка
-make clean                    # Удалить сгенерированные файлы (*.out, *.html, main)
-```
+В любом случае, удовольствие в процессе разработки решения было получено, результатом я доволен) 😄
 
 ---
 
