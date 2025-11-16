@@ -4,11 +4,11 @@ export
 DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
 DOCKER_DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
 MIGRATE := $(shell which migrate || echo "$(HOME)/go/bin/migrate")
+BINARY := main
 
 .PHONY: build
 build:
-	go build -v -o main ./cmd/app/main.go
-
+	go build -v -o $(BINARY) ./cmd/app/main.go
 .PHONY: test
 test-unit:
 	go test -v ./internal/...
@@ -80,5 +80,6 @@ db-shell:
 .PHONY: clean
 clean:
 	rm *.out *.html
+	rm $(BINARY)
 
 .DEFAULT_GOAL := build
