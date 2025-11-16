@@ -1,6 +1,6 @@
 FROM golang:1.24.4-alpine AS build
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY .. .
 RUN go env -w GOPROXY=https://proxy.golang.org
 
 RUN apk add --no-cache git && \

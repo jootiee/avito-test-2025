@@ -1,4 +1,5 @@
-include .env
+.PHONY: build up down lint lint-fix test-unit test-unit-coverage test-unit-coverage-html test-load test-load-team test-load-pr test-load-all test migrate-up migrate-down migrate-down-all migrate-force migrate-version migrate-create migrate-docker-up migrate-docker-down db-shell clean
+include deploy/.env
 export
 
 DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
@@ -6,91 +7,104 @@ DOCKER_DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres
 MIGRATE := $(shell which migrate || echo "$(HOME)/go/bin/migrate")
 BINARY := main
 
-.PHONY: build
+help:
+	@echo "Available commands:"
+	@echo "- help: show this message"
+	@echo ""
+	@echo "- build: Build the Go application"
+	@echo "- up: Run app in Docker container"
+	@echo "- down: Stop app in Docker container"
+	@echo ""
+	@echo "- lint: Run golangci-lint on the codebase"
+	@echo "- lint-fix: Run golangci-lint with auto-fix on the codebase"
+	@echo ""
+	@echo "- test-unit: Run unit tests"
+	@echo "- test-unit-coverage: Run unit tests with coverage report"
+	@echo "- test-unit-coverage-html: Generate HTML coverage report"
+	@echo "- test-load: Run all load tests"
+	@echo "- test-load-team: Run team load test"
+	@echo "- test-load-pr: Run PR load test"
+	@echo "- test-load-all: Run all load tests"
+	@echo "- test: Run all tests (load and unit with coverage)"
+	@echo ""
+	@echo "- migrate-up: Apply all up migrations"
+	@echo "- migrate-down: Apply one down migration"
+	@echo "- migrate-down-all: Apply all down migrations"
+	@echo "- migrate-force: Force set migration version"
+	@echo "- migrate-version: Show current migration version"
+
 build:
 	go build -v -o $(BINARY) ./cmd/app/main.go
 
-.PHONY: lint
+up:
+	docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d
+
+down:
+	docker compose -f deploy/docker-compose.yml down
+
 lint:
 	$(shell go env GOPATH)/bin/golangci-lint run ./...
 
-.PHONY: lint-fix
 lint-fix:
 	$(shell go env GOPATH)/bin/golangci-lint run --fix ./...
 
-.PHONY: test-unit
+
 test-unit:
 	go test -v -race ./internal/service/... ./internal/handler/...
 
-.PHONY: test-unit-coverage
 test-unit-coverage:
 	go test -race -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -func=coverage.out
 
-.PHONY: test-unit-coverage-html
 test-unit-coverage-html:
 	go test -race -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
-.PHONY: test-load
 test-load: test-load-team test-load-pr test-load-all
 
-.PHONY: test-load-team
 test-load-team:
 	@./loadtest/test-team.sh
 
-.PHONY: test-load-pr
 test-load-pr:
 	@./loadtest/test-pr.sh
 
-.PHONY: test-load-all
 test-load-all:
 	@./loadtest/test-all.sh
 
-.PHONY: test
-test-all: test-load-all test-unit-coverage
+test: test-load-all test-unit-coverage
 
-.PHONY: migrate-up
+
 migrate-up:
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" up
 
-.PHONY: migrate-down
 migrate-down:
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" down
 
-.PHONY: migrate-down-all
 migrate-down-all:
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" down -all
 
-.PHONY: migrate-force
 migrate-force:
 	@read -p "Enter version to force: " version; \
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" force $$version
 
-.PHONY: migrate-version
 migrate-version:
 	$(MIGRATE) -path migrations -database "$(DATABASE_URL)" version
 
-.PHONY: migrate-create
 migrate-create:
 	@read -p "Enter migration name: " name; \
 	$(MIGRATE) create -ext sql -dir migrations -seq $$name
 
-.PHONY: migrate-docker-up
 migrate-docker-up:
 	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" up
 
-.PHONY: migrate-docker-down
 migrate-docker-down:
 	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" down
 
-.PHONY: db-shell
 db-shell:
 	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
-.PHONY: clean
 clean:
 	rm *.out *.html $(BINARY)
 
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := help
