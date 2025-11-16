@@ -46,12 +46,14 @@ func New(level, format string) *Logger {
 	config.Level = zap.NewAtomicLevelAt(zapLevel)
 	config.EncoderConfig.TimeKey = "timestamp"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	config.EncoderConfig.CallerKey = "caller"
+	config.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	if strings.ToLower(strings.TrimSpace(format)) == "console" {
 		config.Encoding = "console"
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 
-	logger, _ := config.Build()
+	logger, _ := config.Build(zap.AddCallerSkip(1))
 	sugar := logger.Sugar()
 
 	return &Logger{
