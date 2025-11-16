@@ -5,8 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/jootiee/avito-test-2025/internal/config"
 	"github.com/jootiee/avito-test-2025/internal/handler"
 	"github.com/jootiee/avito-test-2025/internal/service"
@@ -15,12 +19,28 @@ import (
 )
 
 // StartHTTPServer initializes and starts the HTTP server with graceful shutdown
-func StartHTTPServer(ctx context.Context, cfg *config.Config) error {
+func StartHTTPServer() {
+	_ = godotenv.Load()
+	cfg := config.NewConfig()
+	cfg.LoadFromEnv()
 	log := logger.New(cfg.LogLevel, cfg.LogFormat)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		log.Info("Shutdown signal received, initiating graceful shutdown...")
+		cancel()
+	}()
 
 	store, err := storage.New(cfg.DatabaseURL)
 	if err != nil {
-		return fmt.Errorf("failed to initialize storage: %w", err)
+		log.Fatal("Failed to initialize storage", "error", err.Error())
+		return
 	}
 	defer store.Close()
 
@@ -45,7 +65,8 @@ func StartHTTPServer(ctx context.Context, cfg *config.Config) error {
 
 	select {
 	case err := <-serverErr:
-		return err
+		log.Fatal("Server error occurred", "error", err.Error())
+		return
 	case <-ctx.Done():
 		log.Info("Shutting down server gracefully...")
 
@@ -54,10 +75,10 @@ func StartHTTPServer(ctx context.Context, cfg *config.Config) error {
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			log.Error("Server shutdown error", "error", err)
-			return fmt.Errorf("server shutdown failed: %w", err)
+			return
 		}
 
 		log.Info("Server stopped gracefully")
-		return nil
+		return
 	}
 }
