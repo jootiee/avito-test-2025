@@ -10,5 +10,4 @@ CREATE TABLE IF NOT EXISTS pull_requests (
 );
 
 CREATE INDEX idx_prs_author ON pull_requests(author_id);
-CREATE INDEX idx_prs_status ON pull_requests(status);
 CREATE INDEX idx_prs_reviewers ON pull_requests USING GIN (assigned_reviewers);
