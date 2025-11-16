@@ -4,12 +4,12 @@ import (
 	"math/rand"
 )
 
-// SelectRandomReviewers selects up to max reviewers randomly from candidates
-func SelectRandomReviewers(candidates []string, max int) []string {
+// SelectRandomReviewers selects up to maxCount reviewers randomly from candidates
+func SelectRandomReviewers(candidates []string, maxCount int) []string {
 	if len(candidates) == 0 {
 		return []string{}
 	}
-	if len(candidates) <= max {
+	if len(candidates) <= maxCount {
 		rand.Shuffle(len(candidates), func(i, j int) {
 			candidates[i], candidates[j] = candidates[j], candidates[i]
 		})
@@ -18,7 +18,7 @@ func SelectRandomReviewers(candidates []string, max int) []string {
 	rand.Shuffle(len(candidates), func(i, j int) {
 		candidates[i], candidates[j] = candidates[j], candidates[i]
 	})
-	return candidates[:max]
+	return candidates[:maxCount]
 }
 
 // FilterActiveCandidates returns only active users, excluding specified IDs

@@ -23,7 +23,7 @@ func newMockTeamRepository() *mockTeamRepository {
 	}
 }
 
-func (m *mockTeamRepository) CreateTeam(ctx context.Context, team *domain.Team) error {
+func (m *mockTeamRepository) CreateTeam(_ context.Context, team *domain.Team) error {
 	if m.createErr != nil {
 		return m.createErr
 	}
@@ -31,7 +31,7 @@ func (m *mockTeamRepository) CreateTeam(ctx context.Context, team *domain.Team) 
 	return nil
 }
 
-func (m *mockTeamRepository) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
+func (m *mockTeamRepository) GetTeam(_ context.Context, teamName string) (*domain.Team, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
@@ -42,7 +42,7 @@ func (m *mockTeamRepository) GetTeam(ctx context.Context, teamName string) (*dom
 	return team, nil
 }
 
-func (m *mockTeamRepository) TeamExists(ctx context.Context, teamName string) (bool, error) {
+func (m *mockTeamRepository) TeamExists(_ context.Context, teamName string) (bool, error) {
 	if m.existsErr != nil {
 		return false, m.existsErr
 	}

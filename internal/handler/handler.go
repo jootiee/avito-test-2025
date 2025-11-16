@@ -64,7 +64,7 @@ func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if v != nil {
-		json.NewEncoder(w).Encode(v)
+		_ = json.NewEncoder(w).Encode(v)
 	}
 }
 
@@ -73,7 +73,7 @@ func (h *Handler) writeError(w http.ResponseWriter, status int, code, message st
 }
 
 func (h *Handler) handleRoot() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		h.writeJSON(w, http.StatusOK, map[string]string{"message": "Pull Request Reviewer Assignment Service"})
 	}
 }

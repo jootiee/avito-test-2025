@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+
 	"github.com/jootiee/avito-test-2025/internal/config"
 	"github.com/jootiee/avito-test-2025/internal/handler"
 	"github.com/jootiee/avito-test-2025/internal/service"
@@ -39,10 +40,14 @@ func StartHTTPServer() {
 
 	store, err := storage.New(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Failed to initialize storage", "error", err.Error())
+		log.Error("Failed to initialize storage", "error", err.Error())
 		return
 	}
-	defer store.Close()
+	defer func() {
+		if store != nil {
+			store.Close()
+		}
+	}()
 
 	log.Info("Connected to storage")
 
@@ -51,8 +56,9 @@ func StartHTTPServer() {
 	h := handler.New(svc, log)
 
 	srv := &http.Server{
-		Addr:    cfg.BindAddr,
-		Handler: h,
+		Addr:              cfg.BindAddr,
+		Handler:           h,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	serverErr := make(chan error, 1)
@@ -65,7 +71,7 @@ func StartHTTPServer() {
 
 	select {
 	case err := <-serverErr:
-		log.Fatal("Server error occurred", "error", err.Error())
+		log.Error("Server error occurred", "error", err.Error())
 		return
 	case <-ctx.Done():
 		log.Info("Shutting down server gracefully...")

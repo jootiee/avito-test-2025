@@ -10,7 +10,7 @@ import "net/http"
 // @Success 200 {object} map[string]string
 // @Router /health [get]
 func (h *Handler) handleHealth() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		h.writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
 }

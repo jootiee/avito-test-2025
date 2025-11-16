@@ -48,7 +48,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": s.mkTeam()}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range s.mkTeam().Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				h := New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
 				return h
@@ -71,7 +71,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range team.Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				pr := domain.NewPullRequest("pr1", "Add feature", "author1")
 				prRepo := &mockPRRepo{prs: map[string]*domain.PullRequest{"pr1": pr}}
@@ -91,7 +91,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range team.Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				pr := domain.NewPullRequest("pr1", "Add feature", "author1")
 				prRepo := &mockPRRepo{prs: map[string]*domain.PullRequest{"pr1": pr}}
@@ -114,7 +114,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range team.Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				pr := domain.NewPullRequest("pr1", "Add feature", "user1")
 				pr.AssignedReviewers = []string{"user2"}
@@ -139,7 +139,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range team.Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				return New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
 			},
@@ -157,7 +157,7 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
 				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
 				for _, m := range team.Members {
-					userRepo.UpsertUser(context.Background(), &m)
+					_ = userRepo.UpsertUser(context.Background(), &m)
 				}
 				return New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
 			},
@@ -188,9 +188,9 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 			case []byte:
 				reqBody = b
 			default:
-				marshalled, err := json.Marshal(b)
+				marshaled, err := json.Marshal(b)
 				s.NoError(err)
-				reqBody = marshalled
+				reqBody = marshaled
 			}
 			req := httptest.NewRequest(tc.method, tc.path, bytes.NewReader(reqBody))
 			if reqBody != nil {

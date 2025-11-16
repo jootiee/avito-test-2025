@@ -39,11 +39,11 @@ func (s *PullRequestServiceTestSuite) setupTestData() {
 			{UserID: "user5", Username: "eve", TeamName: "backend", IsActive: false},
 		},
 	}
-	s.teamRepo.CreateTeam(s.ctx, team)
+	_ = s.teamRepo.CreateTeam(s.ctx, team)
 
 	for _, user := range team.Members {
 		userCopy := user
-		s.userRepo.UpsertUser(s.ctx, &userCopy)
+		_ = s.userRepo.UpsertUser(s.ctx, &userCopy)
 	}
 }
 
@@ -80,7 +80,7 @@ func (s *PullRequestServiceTestSuite) TestCreate() {
 			authorID: "author1",
 			setupData: func() {
 				s.setupTestData()
-				s.service.Create(s.ctx, "pr1", "Add feature", "author1")
+				_, _ = s.service.Create(s.ctx, "pr1", "Add feature", "author1")
 			},
 			expectedError: "PR already exists",
 		},
@@ -104,7 +104,7 @@ func (s *PullRequestServiceTestSuite) TestCreate() {
 					TeamName: "nonexistent",
 					IsActive: true,
 				}
-				s.userRepo.UpsertUser(s.ctx, user)
+				_ = s.userRepo.UpsertUser(s.ctx, user)
 			},
 			expectedError: "team not found",
 		},
@@ -121,10 +121,10 @@ func (s *PullRequestServiceTestSuite) TestCreate() {
 						{UserID: "user2", Username: "bob", TeamName: "backend", IsActive: false},
 					},
 				}
-				s.teamRepo.CreateTeam(s.ctx, team)
+				_ = s.teamRepo.CreateTeam(s.ctx, team)
 				for _, user := range team.Members {
 					userCopy := user
-					s.userRepo.UpsertUser(s.ctx, &userCopy)
+					_ = s.userRepo.UpsertUser(s.ctx, &userCopy)
 				}
 			},
 			validate: func(pr *domain.PullRequest) {

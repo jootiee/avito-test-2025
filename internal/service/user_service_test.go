@@ -21,7 +21,6 @@ func (s *UserServiceTestSuite) SetupTest() {
 }
 
 func (s *UserServiceTestSuite) TestSetActive() {
-
 	type args struct {
 		userID   string
 		isActive bool
@@ -61,7 +60,7 @@ func (s *UserServiceTestSuite) TestSetActive() {
 				userRepo := newMockUserRepository()
 				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
 			},
-			assertFunc: func(t *testing.T, user *domain.User, err error, sr setupResult) {
+			assertFunc: func(t *testing.T, user *domain.User, err error, _ setupResult) {
 				assert.Error(t, err)
 				assert.Nil(t, user)
 				assert.Equal(t, "user not found", err.Error())
@@ -76,7 +75,7 @@ func (s *UserServiceTestSuite) TestSetActive() {
 				userRepo.setActiveErr = errors.New("database error")
 				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
 			},
-			assertFunc: func(t *testing.T, user *domain.User, err error, sr setupResult) {
+			assertFunc: func(t *testing.T, user *domain.User, err error, _ setupResult) {
 				assert.Error(t, err)
 				assert.Nil(t, user)
 				assert.Equal(t, "database error", err.Error())
@@ -95,7 +94,6 @@ func (s *UserServiceTestSuite) TestSetActive() {
 }
 
 func (s *UserServiceTestSuite) TestGet() {
-
 	type setupResult struct {
 		svc      *UserService
 		userRepo *mockUserRepository
@@ -148,7 +146,6 @@ func (s *UserServiceTestSuite) TestGet() {
 }
 
 func (s *UserServiceTestSuite) TestGetReviews() {
-
 	type setupResult struct {
 		svc    *UserService
 		prRepo *mockPullRequestRepository

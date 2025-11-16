@@ -21,7 +21,6 @@ type UserHandlerTestSuite struct {
 }
 
 func (s *UserHandlerTestSuite) TestUserEndpoints() {
-
 	type args struct {
 		method string
 		path   string
@@ -49,7 +48,7 @@ func (s *UserHandlerTestSuite) TestUserEndpoints() {
 				sr.h = New(service.New(&mockTeamRepo{teams: map[string]*domain.Team{}}, userRepo, sr.prRepo), &mockLogger{})
 				return sr
 			},
-			assertFunc: func(w *httptest.ResponseRecorder, sr setupResult) {
+			assertFunc: func(w *httptest.ResponseRecorder, _ setupResult) {
 				assert.Equal(s.T(), http.StatusOK, w.Code)
 				var resp dto.UserResponse
 				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
@@ -142,9 +141,9 @@ func (s *UserHandlerTestSuite) TestUserEndpoints() {
 			case []byte:
 				bodyBytes = b
 			default:
-				marshalled, err := json.Marshal(b)
+				marshaled, err := json.Marshal(b)
 				s.NoError(err)
-				bodyBytes = marshalled
+				bodyBytes = marshaled
 			}
 			req := httptest.NewRequest(tc.args.method, tc.args.path, bytes.NewReader(bodyBytes))
 			if bodyBytes != nil {

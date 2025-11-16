@@ -1,16 +1,18 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 	"github.com/jootiee/avito-test-2025/internal/dto"
 	"github.com/jootiee/avito-test-2025/internal/service"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 )
 
 type StatsHandlerTestSuite struct {
@@ -37,15 +39,15 @@ func (s *StatsHandlerTestSuite) TestStatsEndpoints() {
 
 				pr1 := domain.NewPullRequest("pr1", "Feature A", "author1")
 				pr1.AssignedReviewers = []string{"user2", "user3"}
-				prRepo.CreatePR(nil, pr1)
+				_ = prRepo.CreatePR(context.Background(), pr1)
 
 				pr2 := domain.NewPullRequest("pr2", "Feature B", "author2")
 				pr2.AssignedReviewers = []string{"user2", "user4"}
-				prRepo.CreatePR(nil, pr2)
+				_ = prRepo.CreatePR(context.Background(), pr2)
 
 				pr3 := domain.NewPullRequest("pr3", "Feature C", "author3")
 				pr3.AssignedReviewers = []string{"user3"}
-				prRepo.CreatePR(nil, pr3)
+				_ = prRepo.CreatePR(context.Background(), pr3)
 
 				svc := service.New(teamRepo, userRepo, prRepo)
 				h := New(svc, &mockLogger{})
@@ -99,14 +101,14 @@ func (s *StatsHandlerTestSuite) TestStatsEndpoints() {
 			sr := tc.setup()
 
 			rec := httptest.NewRecorder()
-			req, _ := http.NewRequest(http.MethodGet, "/stats", nil)
+			req := httptest.NewRequest(http.MethodGet, "/stats", http.NoBody)
 			sr.h.ServeHTTP(rec, req)
 
 			assert.Equal(s.T(), tc.expectedCode, rec.Code)
 
 			if tc.validateResponse != nil {
 				var resp dto.StatsResponse
-				json.NewDecoder(rec.Body).Decode(&resp)
+				_ = json.NewDecoder(rec.Body).Decode(&resp)
 				tc.validateResponse(resp)
 			}
 		})

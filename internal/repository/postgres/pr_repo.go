@@ -5,18 +5,19 @@ import (
 	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-type prRepo struct {
+type PRRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewPRRepository(pool *pgxpool.Pool) *prRepo {
-	return &prRepo{pool: pool}
+func NewPRRepository(pool *pgxpool.Pool) *PRRepo {
+	return &PRRepo{pool: pool}
 }
 
-func (r *prRepo) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
+func (r *PRRepo) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
 	reviewersJSON, err := json.Marshal(pr.AssignedReviewers)
 	if err != nil {
 		return err
@@ -28,7 +29,7 @@ func (r *prRepo) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
 	return err
 }
 
-func (r *prRepo) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
+func (r *PRRepo) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
 	var pr domain.PullRequest
 	var reviewersJSON []byte
 	err := r.pool.QueryRow(ctx, `
@@ -44,7 +45,7 @@ func (r *prRepo) GetPR(ctx context.Context, prID string) (*domain.PullRequest, e
 	return &pr, nil
 }
 
-func (r *prRepo) UpdatePR(ctx context.Context, pr *domain.PullRequest) error {
+func (r *PRRepo) UpdatePR(ctx context.Context, pr *domain.PullRequest) error {
 	reviewersJSON, err := json.Marshal(pr.AssignedReviewers)
 	if err != nil {
 		return err
@@ -61,13 +62,13 @@ func (r *prRepo) UpdatePR(ctx context.Context, pr *domain.PullRequest) error {
 	return err
 }
 
-func (r *prRepo) PRExists(ctx context.Context, prID string) (bool, error) {
+func (r *PRRepo) PRExists(ctx context.Context, prID string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pull_requests WHERE pull_request_id = $1)`, prID).Scan(&exists)
 	return exists, err
 }
 
-func (r *prRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
+func (r *PRRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT pull_request_id, pull_request_name, author_id, status, assigned_reviewers, created_at, merged_at
 		FROM pull_requests
@@ -82,7 +83,15 @@ func (r *prRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain
 	for rows.Next() {
 		var pr domain.PullRequest
 		var reviewersJSON []byte
-		if err := rows.Scan(&pr.PullRequestID, &pr.PullRequestName, &pr.AuthorID, &pr.Status, &reviewersJSON, &pr.CreatedAt, &pr.MergedAt); err != nil {
+		if err := rows.Scan(
+			&pr.PullRequestID,
+			&pr.PullRequestName,
+			&pr.AuthorID,
+			&pr.Status,
+			&reviewersJSON,
+			&pr.CreatedAt,
+			&pr.MergedAt,
+		); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal(reviewersJSON, &pr.AssignedReviewers); err != nil {
@@ -93,7 +102,7 @@ func (r *prRepo) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain
 	return prs, rows.Err()
 }
 
-func (r *prRepo) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
+func (r *PRRepo) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT reviewer_id, COUNT(*) as assignment_count
 		FROM pull_requests,
@@ -118,7 +127,7 @@ func (r *prRepo) GetUserAssignmentCounts(ctx context.Context) (map[string]int, e
 	return counts, rows.Err()
 }
 
-func (r *prRepo) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
+func (r *PRRepo) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT pull_request_id, jsonb_array_length(assigned_reviewers) as reviewer_count
 		FROM pull_requests

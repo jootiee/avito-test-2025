@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const consoleFormat = "console"
+
 // Interface -.
 type Interface interface {
 	Debug(message interface{}, args ...interface{})
@@ -48,8 +50,8 @@ func New(level, format string) *Logger {
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	config.EncoderConfig.CallerKey = "caller"
 	config.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	if strings.ToLower(strings.TrimSpace(format)) == "console" {
-		config.Encoding = "console"
+	if strings.ToLower(strings.TrimSpace(format)) == consoleFormat {
+		config.Encoding = consoleFormat
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 

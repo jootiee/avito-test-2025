@@ -7,16 +7,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresDB struct {
+type DB struct {
 	pool *pgxpool.Pool
 
-	Team *teamRepo
-	User *userRepo
-	PR   *prRepo
+	Team *TeamRepo
+	User *UserRepo
+	PR   *PRRepo
 }
 
 // NewPostgresDB creates a new PostgreSQL connection pool and initializes all repositories
-func NewPostgresDB(connString string) (*PostgresDB, error) {
+func NewPostgresDB(connString string) (*DB, error) {
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
@@ -32,7 +32,7 @@ func NewPostgresDB(connString string) (*PostgresDB, error) {
 	teamRepo := NewTeamRepository(pool, userRepo)
 	prRepo := NewPRRepository(pool)
 
-	return &PostgresDB{
+	return &DB{
 		pool: pool,
 		Team: teamRepo,
 		User: userRepo,
@@ -40,11 +40,11 @@ func NewPostgresDB(connString string) (*PostgresDB, error) {
 	}, nil
 }
 
-func (db *PostgresDB) Ping(ctx context.Context) error {
+func (db *DB) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
 
-func (db *PostgresDB) Close() error {
+func (db *DB) Close() error {
 	db.pool.Close()
 	return nil
 }

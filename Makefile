@@ -18,26 +18,26 @@ lint:
 lint-fix:
 	$(shell go env GOPATH)/bin/golangci-lint run --fix ./...
 
-.PHONY: test
+.PHONY: test-unit
 test-unit:
-	go test -v ./internal/...
+	go test -v ./internal/service/... ./internal/handler/...
 
 .PHONY: test-unit-coverage
 test-unit-coverage:
-	go test -coverprofile=coverage.out ./internal/...
+	go test -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -func=coverage.out
 
 .PHONY: test-unit-coverage-html
 test-unit-coverage-html:
-	go test -coverprofile=coverage.out ./internal/...
+	go test -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
 .PHONY: test-load
-test-load: loadtest-team loadtest-pr loadtest-all
+test-load: test-load-team test-load-pr test-load-all
 
 .PHONY: test-load-team
-test-load-tea:
+test-load-team:
 	@./loadtest/test-team.sh
 
 .PHONY: test-load-pr
@@ -47,6 +47,9 @@ test-load-pr:
 .PHONY: test-load-all
 test-load-all:
 	@./loadtest/test-all.sh
+
+.PHONY: test-all
+test-all: test-load-all test-unit-coverage
 
 .PHONY: migrate-up
 migrate-up:

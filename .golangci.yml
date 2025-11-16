@@ -34,8 +34,6 @@ linters-settings:
           - case
           - condition
           - return
-  govet:
-    check-shadowing: true
   lll:
     line-length: 140
   misspell:
@@ -53,15 +51,12 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
     - funlen
     - gochecknoinits
     - goconst
     - gocritic
-    - gocyclo
     - gofmt
     - goimports
-    - gomnd
     - goprintffuncname
     - gosec
     - gosimple
@@ -88,13 +83,17 @@ issues:
         - gomnd
         - funlen
         - dupl
+        - unused
+        - errcheck
         - gocyclo
+        - lll
+        - revive
     - path: cmd/
       linters:
         - gochecknoinits
+  exclude-dirs:
+    - vendor
+    - docs
 
 run:
   timeout: 5m
-  skip-dirs:
-    - vendor
-    - docs

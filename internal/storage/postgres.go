@@ -7,9 +7,9 @@ import (
 	"github.com/jootiee/avito-test-2025/internal/service"
 )
 
-// postgresStorage wraps postgres.PostgresDB and implements Storage interface
+// postgresStorage wraps postgres.DB and implements Storage interface
 type postgresStorage struct {
-	db *postgres.PostgresDB
+	db *postgres.DB
 }
 
 // New creates a new storage instance using PostgreSQL

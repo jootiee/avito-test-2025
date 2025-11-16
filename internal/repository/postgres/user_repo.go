@@ -5,18 +5,19 @@ import (
 	"database/sql"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-type userRepo struct {
+type UserRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewUserRepository(pool *pgxpool.Pool) *userRepo {
-	return &userRepo{pool: pool}
+func NewUserRepository(pool *pgxpool.Pool) *UserRepo {
+	return &UserRepo{pool: pool}
 }
 
-func (r *userRepo) UpsertUser(ctx context.Context, user *domain.User) error {
+func (r *UserRepo) UpsertUser(ctx context.Context, user *domain.User) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO users (user_id, username, team_name, is_active)
 		VALUES ($1, $2, $3, $4)
@@ -29,7 +30,7 @@ func (r *userRepo) UpsertUser(ctx context.Context, user *domain.User) error {
 	return err
 }
 
-func (r *userRepo) GetUser(ctx context.Context, userID string) (*domain.User, error) {
+func (r *UserRepo) GetUser(ctx context.Context, userID string) (*domain.User, error) {
 	var u domain.User
 	err := r.pool.QueryRow(ctx, `
 		SELECT user_id, username, team_name, is_active
@@ -41,7 +42,7 @@ func (r *userRepo) GetUser(ctx context.Context, userID string) (*domain.User, er
 	return &u, nil
 }
 
-func (r *userRepo) SetUserActive(ctx context.Context, userID string, isActive bool) error {
+func (r *UserRepo) SetUserActive(ctx context.Context, userID string, isActive bool) error {
 	res, err := r.pool.Exec(ctx, `UPDATE users SET is_active = $1, updated_at = NOW() WHERE user_id = $2`, isActive, userID)
 	if err != nil {
 		return err
@@ -52,7 +53,7 @@ func (r *userRepo) SetUserActive(ctx context.Context, userID string, isActive bo
 	return nil
 }
 
-func (r *userRepo) GetTeamMembers(ctx context.Context, teamName string) ([]domain.User, error) {
+func (r *UserRepo) GetTeamMembers(ctx context.Context, teamName string) ([]domain.User, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT user_id, username, team_name, is_active
 		FROM users WHERE team_name = $1

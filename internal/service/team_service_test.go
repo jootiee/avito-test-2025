@@ -75,7 +75,7 @@ func (s *TeamServiceTestSuite) TestCreate() {
 				_, _ = svc.Create(context.Background(), "backend", []domain.User{{UserID: "user1", Username: "alice", IsActive: true}})
 				return setupResult{svc: svc, teamRepo: teamRepo, userRepo: userRepo}
 			},
-			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+			assertFunc: func(t *testing.T, team *domain.Team, err error, _ setupResult) {
 				assert.Error(t, err)
 				assert.Nil(t, team)
 				assert.Equal(t, "team already exists", err.Error())
@@ -90,7 +90,7 @@ func (s *TeamServiceTestSuite) TestCreate() {
 				userRepo := newMockUserRepository()
 				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
 			},
-			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+			assertFunc: func(t *testing.T, team *domain.Team, err error, _ setupResult) {
 				assert.Error(t, err)
 				assert.Nil(t, team)
 				assert.Equal(t, "database error", err.Error())
@@ -105,7 +105,7 @@ func (s *TeamServiceTestSuite) TestCreate() {
 				userRepo.upsertErr = errors.New("user insert failed")
 				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
 			},
-			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+			assertFunc: func(t *testing.T, team *domain.Team, err error, _ setupResult) {
 				assert.Error(t, err)
 				assert.Nil(t, team)
 				assert.Equal(t, "user insert failed", err.Error())

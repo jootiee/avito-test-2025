@@ -12,7 +12,6 @@ type ReviewerTestSuite struct {
 }
 
 func (s *ReviewerTestSuite) TestSelectRandom() {
-
 	type args struct {
 		candidates []string
 		max        int
@@ -21,7 +20,7 @@ func (s *ReviewerTestSuite) TestSelectRandom() {
 	tests := []struct {
 		name       string
 		args       args
-		assertFunc func(t *testing.T, got []string, candidates []string, max int)
+		assertFunc func(t *testing.T, got []string, candidates []string, maxCount int)
 	}{
 		{
 			name: "empty candidates",
@@ -49,8 +48,8 @@ func (s *ReviewerTestSuite) TestSelectRandom() {
 		{
 			name: "more than max returns unique subset",
 			args: args{candidates: []string{"user1", "user2", "user3", "user4", "user5"}, max: 2},
-			assertFunc: func(t *testing.T, got []string, candidates []string, max int) {
-				assert.Len(t, got, max)
+			assertFunc: func(t *testing.T, got []string, candidates []string, maxCount int) {
+				assert.Len(t, got, maxCount)
 				// ensure subset of candidates and no duplicates
 				seen := map[string]struct{}{}
 				valid := map[string]struct{}{}
@@ -87,7 +86,6 @@ func (s *ReviewerTestSuite) TestSelectRandom() {
 }
 
 func (s *ReviewerTestSuite) TestFilterActiveCandidates() {
-
 	type args struct {
 		users     []string
 		activeMap map[string]bool

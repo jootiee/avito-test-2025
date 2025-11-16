@@ -5,27 +5,28 @@ import (
 	"database/sql"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-type teamRepo struct {
+type TeamRepo struct {
 	pool     *pgxpool.Pool
-	userRepo *userRepo
+	userRepo *UserRepo
 }
 
-func NewTeamRepository(pool *pgxpool.Pool, userRepo *userRepo) *teamRepo {
-	return &teamRepo{
+func NewTeamRepository(pool *pgxpool.Pool, userRepo *UserRepo) *TeamRepo {
+	return &TeamRepo{
 		pool:     pool,
 		userRepo: userRepo,
 	}
 }
 
-func (r *teamRepo) CreateTeam(ctx context.Context, team *domain.Team) error {
+func (r *TeamRepo) CreateTeam(ctx context.Context, team *domain.Team) error {
 	_, err := r.pool.Exec(ctx, `INSERT INTO teams (team_name) VALUES ($1)`, team.TeamName)
 	return err
 }
 
-func (r *teamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
+func (r *TeamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
 	members, err := r.userRepo.GetTeamMembers(ctx, teamName)
 	if err != nil {
 		return nil, err
@@ -42,7 +43,7 @@ func (r *teamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Team, 
 	return &domain.Team{TeamName: teamName, Members: members}, nil
 }
 
-func (r *teamRepo) TeamExists(ctx context.Context, teamName string) (bool, error) {
+func (r *TeamRepo) TeamExists(ctx context.Context, teamName string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM teams WHERE team_name = $1)`, teamName).Scan(&exists)
 	return exists, err

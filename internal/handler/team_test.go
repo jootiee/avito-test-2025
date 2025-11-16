@@ -23,7 +23,6 @@ type TeamHandlerTestSuite struct {
 }
 
 func (s *TeamHandlerTestSuite) TestTeamEndpoints() {
-
 	type args struct {
 		method string
 		path   string
@@ -140,9 +139,9 @@ func (s *TeamHandlerTestSuite) TestTeamEndpoints() {
 			case []byte:
 				bodyBytes = b
 			default:
-				marshalled, err := json.Marshal(b)
+				marshaled, err := json.Marshal(b)
 				s.NoError(err)
-				bodyBytes = marshalled
+				bodyBytes = marshaled
 			}
 			req := httptest.NewRequest(tt.args.method, tt.args.path, bytes.NewReader(bodyBytes))
 			if bodyBytes != nil {
@@ -164,12 +163,12 @@ type mockTeamRepo struct {
 	teams map[string]*domain.Team
 }
 
-func (m *mockTeamRepo) CreateTeam(ctx context.Context, team *domain.Team) error {
+func (m *mockTeamRepo) CreateTeam(_ context.Context, team *domain.Team) error {
 	m.teams[team.TeamName] = team
 	return nil
 }
 
-func (m *mockTeamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
+func (m *mockTeamRepo) GetTeam(_ context.Context, teamName string) (*domain.Team, error) {
 	team, exists := m.teams[teamName]
 	if !exists {
 		return nil, sql.ErrNoRows
@@ -177,7 +176,7 @@ func (m *mockTeamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Te
 	return team, nil
 }
 
-func (m *mockTeamRepo) TeamExists(ctx context.Context, teamName string) (bool, error) {
+func (m *mockTeamRepo) TeamExists(_ context.Context, teamName string) (bool, error) {
 	_, exists := m.teams[teamName]
 	return exists, nil
 }
@@ -186,12 +185,12 @@ type mockUserRepo struct {
 	users map[string]*domain.User
 }
 
-func (m *mockUserRepo) UpsertUser(ctx context.Context, user *domain.User) error {
+func (m *mockUserRepo) UpsertUser(_ context.Context, user *domain.User) error {
 	m.users[user.UserID] = user
 	return nil
 }
 
-func (m *mockUserRepo) GetUser(ctx context.Context, userID string) (*domain.User, error) {
+func (m *mockUserRepo) GetUser(_ context.Context, userID string) (*domain.User, error) {
 	user, exists := m.users[userID]
 	if !exists {
 		return nil, sql.ErrNoRows
@@ -199,7 +198,7 @@ func (m *mockUserRepo) GetUser(ctx context.Context, userID string) (*domain.User
 	return user, nil
 }
 
-func (m *mockUserRepo) SetUserActive(ctx context.Context, userID string, isActive bool) error {
+func (m *mockUserRepo) SetUserActive(_ context.Context, userID string, isActive bool) error {
 	user, exists := m.users[userID]
 	if !exists {
 		return errors.New("user not found")
@@ -221,6 +220,14 @@ func (m *mockUserRepo) GetTeamMembers(ctx context.Context, teamName string) ([]d
 type mockPRRepo struct {
 	prs map[string]*domain.PullRequest
 }
+
+type mockLogger struct{}
+
+func (m *mockLogger) Debug(_ interface{}, _ ...interface{}) {}
+func (m *mockLogger) Info(_ string, _ ...interface{})       {}
+func (m *mockLogger) Warn(_ string, _ ...interface{})       {}
+func (m *mockLogger) Error(_ interface{}, _ ...interface{}) {}
+func (m *mockLogger) Fatal(_ interface{}, _ ...interface{}) {}
 
 func (m *mockPRRepo) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
 	m.prs[pr.PullRequestID] = pr

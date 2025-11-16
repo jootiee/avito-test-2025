@@ -45,7 +45,7 @@ func (s *HealthHandlerTestSuite) TestHealthEndpoints() {
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req := httptest.NewRequest(http.MethodGet, tc.path, http.NoBody)
 			w := httptest.NewRecorder()
 			h.ServeHTTP(w, req)
 			tc.assertFunc(w)

@@ -237,13 +237,13 @@ func (s *PullRequestService) Get(ctx context.Context, prID string) (*domain.Pull
 }
 
 // GetStatistics retrieves reviewer assignment statistics
-func (s *PullRequestService) GetStatistics(ctx context.Context) (map[string]int, map[string]int, error) {
-	userCounts, err := s.pullRequestRepo.GetUserAssignmentCounts(ctx)
+func (s *PullRequestService) GetStatistics(ctx context.Context) (userCounts, prCounts map[string]int, err error) {
+	userCounts, err = s.pullRequestRepo.GetUserAssignmentCounts(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	prCounts, err := s.pullRequestRepo.GetPRReviewerCounts(ctx)
+	prCounts, err = s.pullRequestRepo.GetPRReviewerCounts(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
