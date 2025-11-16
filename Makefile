@@ -20,16 +20,16 @@ lint-fix:
 
 .PHONY: test-unit
 test-unit:
-	go test -v ./internal/service/... ./internal/handler/...
+	go test -v -race ./internal/service/... ./internal/handler/...
 
 .PHONY: test-unit-coverage
 test-unit-coverage:
-	go test -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
+	go test -race -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -func=coverage.out
 
 .PHONY: test-unit-coverage-html
 test-unit-coverage-html:
-	go test -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
+	go test -race -coverprofile=coverage.out ./internal/service/... ./internal/handler/...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
@@ -48,7 +48,7 @@ test-load-pr:
 test-load-all:
 	@./loadtest/test-all.sh
 
-.PHONY: test-all
+.PHONY: test
 test-all: test-load-all test-unit-coverage
 
 .PHONY: migrate-up
