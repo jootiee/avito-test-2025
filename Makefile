@@ -79,7 +79,6 @@ db-shell:
 
 .PHONY: clean
 clean:
-	rm *.out *.html
-	rm $(BINARY)
+	rm *.out *.html $(BINARY)
 
 .DEFAULT_GOAL := build
