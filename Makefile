@@ -9,6 +9,15 @@ BINARY := main
 .PHONY: build
 build:
 	go build -v -o $(BINARY) ./cmd/app/main.go
+
+.PHONY: lint
+lint:
+	$(shell go env GOPATH)/bin/golangci-lint run ./...
+
+.PHONY: lint-fix
+lint-fix:
+	$(shell go env GOPATH)/bin/golangci-lint run --fix ./...
+
 .PHONY: test
 test-unit:
 	go test -v ./internal/...
