@@ -5,50 +5,54 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/jootiee/avito-test-2025/internal/service"
 )
 
-func TestHandler_Health(t *testing.T) {
+type HealthHandlerTestSuite struct {
+	suite.Suite
+}
+
+func (s *HealthHandlerTestSuite) TestHealthEndpoints() {
 	svc := &service.Service{}
-	log := &mockLogger{}
-	h := New(svc, log)
+	h := New(svc, &mockLogger{})
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	w := httptest.NewRecorder()
-
-	h.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", w.Code)
+	tests := []struct {
+		name       string
+		path       string
+		assertFunc func(w *httptest.ResponseRecorder)
+	}{
+		{
+			name: "health ok",
+			path: "/health",
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusOK, w.Code)
+				assert.Equal(s.T(), "application/json", w.Header().Get("Content-Type"))
+				assert.Equal(s.T(), "{\"status\":\"ok\"}\n", w.Body.String())
+			},
+		},
+		{
+			name: "root page",
+			path: "/",
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusOK, w.Code)
+				assert.NotEmpty(s.T(), w.Body.String())
+			},
+		},
 	}
 
-	expectedBody := `{"status":"ok"}`
-	if body := w.Body.String(); body != expectedBody+"\n" {
-		t.Errorf("expected body %q, got %q", expectedBody, body)
-	}
-
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected Content-Type application/json, got %s", contentType)
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+			tc.assertFunc(w)
+		})
 	}
 }
 
-func TestHandler_Root(t *testing.T) {
-	svc := &service.Service{}
-	log := &mockLogger{}
-	h := New(svc, log)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-
-	h.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", w.Code)
-	}
-
-	body := w.Body.String()
-	if body == "" {
-		t.Error("expected non-empty response body")
-	}
+func TestHealthHandler(t *testing.T) {
+	suite.Run(t, new(HealthHandlerTestSuite))
 }

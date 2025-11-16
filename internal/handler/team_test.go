@@ -3,176 +3,160 @@ package handler
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 	"github.com/jootiee/avito-test-2025/internal/dto"
 	"github.com/jootiee/avito-test-2025/internal/service"
 )
 
-// Helper to create test handler with mocked team service
-func newTestHandlerWithTeamMock(
-	createFunc func(ctx context.Context, teamName string, members []domain.User) (*domain.Team, error),
-	getFunc func(ctx context.Context, teamName string) (*domain.Team, error),
-) *Handler {
-	teamService := &service.TeamService{}
-	// Note: We can't easily mock concrete services without refactoring to interfaces at handler level
-	// For now, create minimal service that will work with simple tests
-	svc := &service.Service{
-		Team: teamService,
-	}
-	return New(svc, &mockLogger{})
+type TeamHandlerTestSuite struct {
+	suite.Suite
 }
 
-func TestHandler_AddTeam_InvalidJSON(t *testing.T) {
-	// Setup - create handler with actual service but we'll fail before calling it
-	svc := &service.Service{}
-	log := &mockLogger{}
-	h := New(svc, log)
+func (s *TeamHandlerTestSuite) TestTeamEndpoints() {
 
-	// Invalid JSON
-	req := httptest.NewRequest(http.MethodPost, "/team/add", bytes.NewReader([]byte("invalid json")))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	// Execute
-	h.ServeHTTP(w, req)
-
-	// Assert
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status 400, got %d", w.Code)
+	type args struct {
+		method string
+		path   string
+		body   interface{}
+	}
+	type setupResult struct {
+		handler *Handler
 	}
 
-	var resp dto.APIError
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode error response: %v", err)
-	}
-
-	if resp.Error.Code != dto.ErrCodeNotFound {
-		t.Errorf("expected error code %s, got %s", dto.ErrCodeNotFound, resp.Error.Code)
-	}
-}
-
-func TestHandler_GetTeam_MissingTeamName(t *testing.T) {
-	// Setup
-	svc := &service.Service{}
-	log := &mockLogger{}
-	h := New(svc, log)
-
-	// Create request without team_name query param
-	req := httptest.NewRequest(http.MethodGet, "/team/get", nil)
-	w := httptest.NewRecorder()
-
-	// Execute
-	h.ServeHTTP(w, req)
-
-	// Assert
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status 400, got %d", w.Code)
-	}
-
-	var resp dto.APIError
-	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
-		t.Fatalf("failed to decode error response: %v", err)
-	}
-
-	if resp.Error.Message != "team_name required" {
-		t.Errorf("expected 'team_name required' message, got %s", resp.Error.Message)
-	}
-}
-
-// Integration-style test with real service but mocked repositories
-func TestHandler_TeamEndpoints_WithMockedRepos(t *testing.T) {
-	// Create mocked repositories
-	teamRepo := &mockTeamRepo{
-		teams: make(map[string]*domain.Team),
-	}
-	userRepo := &mockUserRepo{
-		users: make(map[string]*domain.User),
-	}
-	prRepo := &mockPRRepo{
-		prs: make(map[string]*domain.PullRequest),
-	}
-
-	// Create real services with mocked repositories
-	svc := service.New(teamRepo, userRepo, prRepo)
-	log := &mockLogger{}
-	h := New(svc, log)
-
-	// Test 1: Add team successfully
-	t.Run("AddTeam", func(t *testing.T) {
-		reqBody := dto.TeamAddRequest{
-			TeamName: "backend",
-			Members: []dto.TeamMemberDTO{
-				{UserID: "user1", Username: "alice", IsActive: true},
-				{UserID: "user2", Username: "bob", IsActive: true},
+	tests := []struct {
+		name       string
+		args       args
+		setup      func() setupResult
+		assertFunc func(w *httptest.ResponseRecorder)
+	}{
+		{
+			name:  "add team invalid JSON",
+			args:  args{method: http.MethodPost, path: "/team/add", body: []byte("invalid json")},
+			setup: func() setupResult { return setupResult{handler: New(&service.Service{}, &mockLogger{})} },
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusBadRequest, w.Code)
+				var resp dto.APIError
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), dto.ErrCodeNotFound, resp.Error.Code)
 			},
-		}
-		body, _ := json.Marshal(reqBody)
+		},
+		{
+			name:  "get team missing query param",
+			args:  args{method: http.MethodGet, path: "/team/get"},
+			setup: func() setupResult { return setupResult{handler: New(&service.Service{}, &mockLogger{})} },
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusBadRequest, w.Code)
+				var resp dto.APIError
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), "team_name required", resp.Error.Message)
+			},
+		},
+		{
+			name: "add team success",
+			args: args{method: http.MethodPost, path: "/team/add", body: dto.TeamAddRequest{TeamName: "backend", Members: []dto.TeamMemberDTO{{UserID: "user1", Username: "alice", IsActive: true}, {UserID: "user2", Username: "bob", IsActive: true}}}},
+			setup: func() setupResult {
+				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{}}
+				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
+				h := New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
+				return setupResult{handler: h}
+			},
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusCreated, w.Code)
+				var resp dto.TeamResponse
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), "backend", resp.Team.TeamName)
+				assert.Len(s.T(), resp.Team.Members, 2)
+			},
+		},
+		{
+			name: "add team duplicate",
+			args: args{method: http.MethodPost, path: "/team/add", body: dto.TeamAddRequest{TeamName: "backend", Members: []dto.TeamMemberDTO{{UserID: "user1", Username: "alice", IsActive: true}}}},
+			setup: func() setupResult {
+				// pre-create team
+				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": domain.NewTeam("backend", []domain.User{})}}
+				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
+				h := New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
+				return setupResult{handler: h}
+			},
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusBadRequest, w.Code)
+				var resp dto.APIError
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), dto.ErrCodeTeamExists, resp.Error.Code)
+			},
+		},
+		{
+			name: "get team not found",
+			args: args{method: http.MethodGet, path: "/team/get?team_name=missing"},
+			setup: func() setupResult {
+				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{}}
+				userRepo := &mockUserRepo{users: map[string]*domain.User{}}
+				h := New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
+				return setupResult{handler: h}
+			},
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusNotFound, w.Code)
+				var resp dto.APIError
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), "team not found", resp.Error.Message)
+			},
+		},
+		{
+			name: "get team success",
+			args: args{method: http.MethodGet, path: "/team/get?team_name=backend"},
+			setup: func() setupResult {
+				team := domain.NewTeam("backend", []domain.User{{UserID: "u1", Username: "alice", TeamName: "backend", IsActive: true}})
+				teamRepo := &mockTeamRepo{teams: map[string]*domain.Team{"backend": team}}
+				userRepo := &mockUserRepo{users: map[string]*domain.User{"u1": {UserID: "u1", Username: "alice", TeamName: "backend", IsActive: true}}}
+				h := New(service.New(teamRepo, userRepo, &mockPRRepo{prs: map[string]*domain.PullRequest{}}), &mockLogger{})
+				return setupResult{handler: h}
+			},
+			assertFunc: func(w *httptest.ResponseRecorder) {
+				assert.Equal(s.T(), http.StatusOK, w.Code)
+				var resp domain.Team
+				assert.NoError(s.T(), json.NewDecoder(w.Body).Decode(&resp))
+				assert.Equal(s.T(), "backend", resp.TeamName)
+				assert.Len(s.T(), resp.Members, 1)
+			},
+		},
+	}
 
-		req := httptest.NewRequest(http.MethodPost, "/team/add", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			var bodyBytes []byte
+			switch b := tt.args.body.(type) {
+			case nil:
+			case []byte:
+				bodyBytes = b
+			default:
+				marshalled, err := json.Marshal(b)
+				s.NoError(err)
+				bodyBytes = marshalled
+			}
+			req := httptest.NewRequest(tt.args.method, tt.args.path, bytes.NewReader(bodyBytes))
+			if bodyBytes != nil {
+				req.Header.Set("Content-Type", "application/json")
+			}
+			w := httptest.NewRecorder()
+			sr.handler.ServeHTTP(w, req)
+			tt.assertFunc(w)
+		})
+	}
+}
 
-		h.ServeHTTP(w, req)
-
-		if w.Code != http.StatusCreated {
-			t.Errorf("expected status 201, got %d: %s", w.Code, w.Body.String())
-		}
-
-		var resp dto.TeamResponse
-		json.NewDecoder(w.Body).Decode(&resp)
-		if resp.Team.TeamName != "backend" {
-			t.Errorf("expected team name 'backend', got %s", resp.Team.TeamName)
-		}
-	})
-
-	// Test 2: Get team
-	t.Run("GetTeam", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/team/get?team_name=backend", nil)
-		w := httptest.NewRecorder()
-
-		h.ServeHTTP(w, req)
-
-		if w.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", w.Code)
-		}
-	})
-
-	// Test 3: Get non-existent team
-	t.Run("GetTeam_NotFound", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/team/get?team_name=nonexistent", nil)
-		w := httptest.NewRecorder()
-
-		h.ServeHTTP(w, req)
-
-		if w.Code != http.StatusNotFound {
-			t.Errorf("expected status 404, got %d", w.Code)
-		}
-	})
-
-	// Test 4: Add duplicate team
-	t.Run("AddTeam_AlreadyExists", func(t *testing.T) {
-		reqBody := dto.TeamAddRequest{
-			TeamName: "backend",
-			Members:  []dto.TeamMemberDTO{{UserID: "user1", Username: "alice", IsActive: true}},
-		}
-		body, _ := json.Marshal(reqBody)
-
-		req := httptest.NewRequest(http.MethodPost, "/team/add", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		h.ServeHTTP(w, req)
-
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("expected status 400, got %d", w.Code)
-		}
-	})
+func TestTeamHandler(t *testing.T) {
+	suite.Run(t, new(TeamHandlerTestSuite))
 }
 
 // Simple mock repository implementations for handler testing
@@ -188,7 +172,7 @@ func (m *mockTeamRepo) CreateTeam(ctx context.Context, team *domain.Team) error 
 func (m *mockTeamRepo) GetTeam(ctx context.Context, teamName string) (*domain.Team, error) {
 	team, exists := m.teams[teamName]
 	if !exists {
-		return nil, errors.New("team not found")
+		return nil, sql.ErrNoRows
 	}
 	return team, nil
 }
@@ -210,7 +194,7 @@ func (m *mockUserRepo) UpsertUser(ctx context.Context, user *domain.User) error 
 func (m *mockUserRepo) GetUser(ctx context.Context, userID string) (*domain.User, error) {
 	user, exists := m.users[userID]
 	if !exists {
-		return nil, errors.New("user not found")
+		return nil, sql.ErrNoRows
 	}
 	return user, nil
 }
@@ -246,7 +230,7 @@ func (m *mockPRRepo) CreatePR(ctx context.Context, pr *domain.PullRequest) error
 func (m *mockPRRepo) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
 	pr, exists := m.prs[prID]
 	if !exists {
-		return nil, errors.New("PR not found")
+		return nil, sql.ErrNoRows
 	}
 	return pr, nil
 }

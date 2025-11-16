@@ -65,7 +65,7 @@ func (s *PullRequestServiceTestSuite) TestCreate() {
 			setupData: s.setupTestData,
 			validate: func(pr *domain.PullRequest) {
 				assert.Equal(s.T(), "pr1", pr.PullRequestID)
-				assert.Equal(s.T(), domain.PRStatusOpen, pr.Status)
+				assert.Equal(s.T(), domain.PullRequestStatusOpen, pr.Status)
 				assert.Equal(s.T(), "author1", pr.AuthorID)
 				assert.LessOrEqual(s.T(), len(pr.AssignedReviewers), 2)
 				for _, reviewer := range pr.AssignedReviewers {
@@ -172,7 +172,7 @@ func (s *PullRequestServiceTestSuite) TestMerge() {
 				_ = s.pullRequestRepo.CreatePR(s.ctx, pr)
 			},
 			validate: func(pr *domain.PullRequest) {
-				assert.Equal(s.T(), domain.PRStatusMerged, pr.Status)
+				assert.Equal(s.T(), domain.PullRequestStatusMerged, pr.Status)
 				assert.NotNil(s.T(), pr.MergedAt)
 			},
 		},
@@ -181,11 +181,11 @@ func (s *PullRequestServiceTestSuite) TestMerge() {
 			prID: "pr1",
 			setupData: func() {
 				pr := domain.NewPullRequest("pr1", "Add feature", "author1")
-				pr.Status = domain.PRStatusMerged
+				pr.Status = domain.PullRequestStatusMerged
 				_ = s.pullRequestRepo.CreatePR(s.ctx, pr)
 			},
 			validate: func(pr *domain.PullRequest) {
-				assert.Equal(s.T(), domain.PRStatusMerged, pr.Status)
+				assert.Equal(s.T(), domain.PullRequestStatusMerged, pr.Status)
 			},
 		},
 		{
@@ -257,11 +257,11 @@ func (s *PullRequestServiceTestSuite) TestReassignReviewer() {
 			setupData: func() {
 				s.setupTestData()
 				pr := domain.NewPullRequest("pr1", "Add feature", "author1")
-				pr.Status = domain.PRStatusMerged
+				pr.Status = domain.PullRequestStatusMerged
 				pr.AssignedReviewers = []string{"user2", "user3"}
 				_ = s.pullRequestRepo.CreatePR(s.ctx, pr)
 			},
-			expectedError: "cannot reassign on merged PR",
+			expectedError: "cannot reassign on merged PullRequest",
 		},
 		{
 			name:      "user not assigned",

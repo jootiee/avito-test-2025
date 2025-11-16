@@ -116,13 +116,13 @@ func (s *PullRequestService) Merge(ctx context.Context, prID string) (*domain.Pu
 	}
 
 	// If already merged, return as-is
-	if pr.Status == domain.PRStatusMerged {
+	if pr.Status == domain.PullRequestStatusMerged {
 		return pr, nil
 	}
 
 	// Update status
 	now := time.Now().UTC()
-	pr.Status = domain.PRStatusMerged
+	pr.Status = domain.PullRequestStatusMerged
 	pr.MergedAt = &now
 
 	if err := s.pullRequestRepo.UpdatePR(ctx, pr); err != nil {
@@ -143,8 +143,8 @@ func (s *PullRequestService) ReassignReviewer(ctx context.Context, prID, oldUser
 	}
 
 	// Check if PR is merged
-	if pr.Status == domain.PRStatusMerged {
-		return nil, "", errors.New("cannot reassign on merged PR")
+	if pr.Status == domain.PullRequestStatusMerged {
+		return nil, "", errors.New("cannot reassign on merged PullRequest")
 	}
 
 	// Check if old user is assigned

@@ -14,11 +14,11 @@ import (
 // @Tags PullRequests
 // @Accept json
 // @Produce json
-// @Param pr body dto.CreatePullRequestRequest true "Pull request details"
-// @Success 201 {object} dto.PRResponse
+// @Param pullRequest body dto.CreatePullRequestRequest true "Pull request details"
+// @Success 201 {object} dto.PullRequestResponse
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
 // @Failure 404 {object} dto.ErrorResponse "Author or team not found"
-// @Failure 409 {object} dto.ErrorResponse "PR already exists"
+// @Failure 409 {object} dto.ErrorResponse "PullRequest already exists"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /pullRequest/create [post]
 func (h *Handler) handleCreatePullRequest() http.HandlerFunc {
@@ -29,10 +29,10 @@ func (h *Handler) handleCreatePullRequest() http.HandlerFunc {
 			return
 		}
 
-		pr, err := h.service.PullRequest.Create(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
+		pullRequest, err := h.service.PullRequest.Create(r.Context(), req.PullRequestID, req.PullRequestName, req.AuthorID)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestExists, "PR id already exists")
+				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestExists, "PullRequest id already exists")
 				return
 			}
 			if strings.Contains(err.Error(), "not found") {
@@ -43,20 +43,20 @@ func (h *Handler) handleCreatePullRequest() http.HandlerFunc {
 			return
 		}
 
-		h.writeJSON(w, http.StatusCreated, dto.PullRequestResponse{PR: pr})
+		h.writeJSON(w, http.StatusCreated, dto.PullRequestResponse{PullRequest: pullRequest})
 	}
 }
 
-// handleMergePullRequest marks a PR as merged
+// handleMergePullRequest marks a PullRequest as merged
 // @Summary Merge a pull request
 // @Description Marks a pull request as merged
 // @Tags PullRequests
 // @Accept json
 // @Produce json
-// @Param request body dto.MergeRequest true "PR ID to merge"
-// @Success 200 {object} dto.PRResponse
+// @Param request body dto.MergeRequest true "PullRequest ID to merge"
+// @Success 200 {object} dto.PullRequestResponse
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
-// @Failure 404 {object} dto.ErrorResponse "PR not found"
+// @Failure 404 {object} dto.ErrorResponse "PullRequest not found"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /pullRequest/merge [post]
 func (h *Handler) handleMergePullRequest() http.HandlerFunc {
@@ -67,17 +67,17 @@ func (h *Handler) handleMergePullRequest() http.HandlerFunc {
 			return
 		}
 
-		pr, err := h.service.PullRequest.Merge(r.Context(), req.PullRequestID)
+		pullRequest, err := h.service.PullRequest.Merge(r.Context(), req.PullRequestID)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
-				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "pr not found")
+				h.writeError(w, http.StatusNotFound, dto.ErrCodeNotFound, "PullRequest not found")
 				return
 			}
 			h.writeError(w, http.StatusInternalServerError, dto.ErrCodeNotFound, err.Error())
 			return
 		}
 
-		h.writeJSON(w, http.StatusOK, dto.PullRequestResponse{PR: pr})
+		h.writeJSON(w, http.StatusOK, dto.PullRequestResponse{PullRequest: pullRequest})
 	}
 }
 
@@ -90,8 +90,8 @@ func (h *Handler) handleMergePullRequest() http.HandlerFunc {
 // @Param request body dto.ReassignRequest true "Reassignment details"
 // @Success 200 {object} dto.ReassignResponse
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
-// @Failure 404 {object} dto.ErrorResponse "PR or user not found"
-// @Failure 409 {object} dto.ErrorResponse "PR merged, not assigned, or no candidate"
+// @Failure 404 {object} dto.ErrorResponse "PullRequest or user not found"
+// @Failure 409 {object} dto.ErrorResponse "PullRequest merged, not assigned, or no candidate"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /pullRequest/reassign [post]
 func (h *Handler) handleReassign() http.HandlerFunc {
@@ -102,14 +102,14 @@ func (h *Handler) handleReassign() http.HandlerFunc {
 			return
 		}
 
-		pr, newUserID, err := h.service.PullRequest.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
+		pullRequest, newUserID, err := h.service.PullRequest.ReassignReviewer(r.Context(), req.PullRequestID, req.OldUserID)
 		if err != nil {
-			if strings.Contains(err.Error(), "merged PR") {
-				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestMerged, "cannot reassign on merged PR")
+			if strings.Contains(err.Error(), "merged PullRequest") {
+				h.writeError(w, http.StatusConflict, dto.ErrCodePullRequestMerged, "cannot reassign on merged PullRequest")
 				return
 			}
 			if strings.Contains(err.Error(), "not assigned") {
-				h.writeError(w, http.StatusConflict, dto.ErrCodeNotAssigned, "reviewer is not assigned to this PR")
+				h.writeError(w, http.StatusConflict, dto.ErrCodeNotAssigned, "reviewer is not assigned to this PullRequest")
 				return
 			}
 			if strings.Contains(err.Error(), "no active replacement") {
@@ -125,8 +125,8 @@ func (h *Handler) handleReassign() http.HandlerFunc {
 		}
 
 		h.writeJSON(w, http.StatusOK, dto.ReassignResponse{
-			PR:         pr,
-			ReplacedBy: newUserID,
+			PullRequest: pullRequest,
+			ReplacedBy:  newUserID,
 		})
 	}
 }

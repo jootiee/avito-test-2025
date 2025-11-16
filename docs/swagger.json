@@ -34,7 +34,7 @@
         },
         "/pullRequest/create": {
             "post": {
-                "description": "Creates a new PR and automatically assigns up to 2 reviewers from the author's team",
+                "description": "Creates a new Pull Request and automatically assigns up to 2 reviewers from the author's team",
                 "consumes": [
                     "application/json"
                 ],
@@ -52,7 +52,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreatePRRequest"
+                            "$ref": "#/definitions/dto.CreatePullRequestRequest"
                         }
                     }
                 ],
@@ -60,7 +60,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.PRResponse"
+                            "$ref": "#/definitions/dto.PullRequestResponse"
                         }
                     },
                     "400": {
@@ -118,7 +118,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.PRResponse"
+                            "$ref": "#/definitions/dto.PullRequestResponse"
                         }
                     },
                     "400": {
@@ -485,7 +485,7 @@
                 }
             }
         },
-        "dto.CreatePRRequest": {
+        "dto.CreatePullRequestRequest": {
             "type": "object",
             "properties": {
                 "author_id": {
@@ -526,14 +526,6 @@
                 }
             }
         },
-        "dto.PRResponse": {
-            "type": "object",
-            "properties": {
-                "pr": {
-                    "$ref": "#/definitions/domain.PullRequest"
-                }
-            }
-        },
         "dto.PRShort": {
             "type": "object",
             "properties": {
@@ -551,7 +543,15 @@
                 }
             }
         },
-        "dto.PRStats": {
+        "dto.PullRequestResponse": {
+            "type": "object",
+            "properties": {
+                "pr": {
+                    "$ref": "#/definitions/domain.PullRequest"
+                }
+            }
+        },
+        "dto.PullRequestStats": {
             "type": "object",
             "properties": {
                 "pull_request_id": {
@@ -601,7 +601,7 @@
                 "pr_stats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.PRStats"
+                        "$ref": "#/definitions/dto.PullRequestStats"
                     }
                 },
                 "user_stats": {

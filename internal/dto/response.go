@@ -16,13 +16,13 @@ type UserResponse struct {
 
 // PullRequestResponse wraps a pull request for API responses
 type PullRequestResponse struct {
-	PR *domain.PullRequest `json:"pr"`
+	PullRequest *domain.PullRequest `json:"pr"`
 }
 
 // ReassignResponse includes PR and the new reviewer ID
 type ReassignResponse struct {
-	PR         *domain.PullRequest `json:"pr"`
-	ReplacedBy string              `json:"replaced_by"`
+	PullRequest *domain.PullRequest `json:"pr"`
+	ReplacedBy  string              `json:"replaced_by"`
 }
 
 // PRShort represents a shortened PR for list responses

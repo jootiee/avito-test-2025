@@ -166,9 +166,9 @@ func (s *UserServiceTestSuite) TestGetReviews() {
 			setup: func() setupResult {
 				prRepo := newMockPullRequestRepository()
 				ctx := context.Background()
-				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr1", PullRequestName: "Feature A", AuthorID: "author1", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user1", "user2"}})
-				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr2", PullRequestName: "Feature B", AuthorID: "author2", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user1"}})
-				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr3", PullRequestName: "Feature C", AuthorID: "author1", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user3"}})
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr1", PullRequestName: "Feature A", AuthorID: "author1", Status: domain.PullRequestStatusOpen, AssignedReviewers: []string{"user1", "user2"}})
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr2", PullRequestName: "Feature B", AuthorID: "author2", Status: domain.PullRequestStatusOpen, AssignedReviewers: []string{"user1"}})
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr3", PullRequestName: "Feature C", AuthorID: "author1", Status: domain.PullRequestStatusOpen, AssignedReviewers: []string{"user3"}})
 				return setupResult{svc: NewUserService(newMockUserRepository(), prRepo), prRepo: prRepo}
 			},
 			assertFunc: func(t *testing.T, prs []*domain.PullRequest, err error) {

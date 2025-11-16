@@ -5,8 +5,8 @@ import "time"
 type PRStatus string
 
 const (
-	PRStatusOpen   PRStatus = "OPEN"
-	PRStatusMerged PRStatus = "MERGED"
+	PullRequestStatusOpen   PRStatus = "OPEN"
+	PullRequestStatusMerged PRStatus = "MERGED"
 )
 
 type PullRequest struct {
@@ -24,7 +24,7 @@ func NewPullRequest(id, name, authorID string) *PullRequest {
 		PullRequestID:     id,
 		PullRequestName:   name,
 		AuthorID:          authorID,
-		Status:            PRStatusOpen,
+		Status:            PullRequestStatusOpen,
 		AssignedReviewers: []string{},
 	}
 }
