@@ -1,5 +1,5 @@
 .PHONY: build up down lint lint-fix test-unit test-unit-coverage test-unit-coverage-html test-load test-load-team test-load-pr test-load-all test migrate-up migrate-down migrate-down-all migrate-force migrate-version migrate-create migrate-docker-up migrate-docker-down db-shell clean
-include deploy/.env
+include .env
 export
 
 DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=disable
@@ -12,7 +12,7 @@ help:
 	@echo "- help: show this message"
 	@echo ""
 	@echo "- build: Build the Go application"
-	@echo "- up: Run app in Docker container"
+	@echo "- up: Run app in Docker container and run migrations"
 	@echo "- down: Stop app in Docker container"
 	@echo ""
 	@echo "- lint: Run golangci-lint on the codebase"
@@ -37,7 +37,8 @@ build:
 	go build -v -o $(BINARY) ./cmd/app/main.go
 
 up:
-	docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d
+	docker compose --env-file .env -f deploy/docker-compose.yml up -d --wait
+	$(MAKE) migrate-docker-up
 
 down:
 	docker compose -f deploy/docker-compose.yml down
@@ -96,13 +97,13 @@ migrate-create:
 	$(MIGRATE) create -ext sql -dir migrations -seq $$name
 
 migrate-docker-up:
-	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" up
+	docker compose -f deploy/docker-compose.yml exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" up
 
 migrate-docker-down:
-	docker compose exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" down
+	docker compose -f deploy/docker-compose.yml exec app migrate -path /app/migrations -database "$(DOCKER_DATABASE_URL)" down
 
 db-shell:
-	docker compose exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+	docker compose -f deploy/docker-compose.yml exec postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
 clean:
 	rm *.out *.html $(BINARY)
