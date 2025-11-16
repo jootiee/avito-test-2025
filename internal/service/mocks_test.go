@@ -108,8 +108,8 @@ func (m *mockUserRepository) GetTeamMembers(ctx context.Context, teamName string
 	return members, nil
 }
 
-// mockPRRepository is a mock implementation of PRRepository
-type mockPRRepository struct {
+// mockPullRequestRepository is a mock implementation of PRRepository
+type mockPullRequestRepository struct {
 	prs       map[string]*domain.PullRequest
 	createErr error
 	getErr    error
@@ -117,13 +117,13 @@ type mockPRRepository struct {
 	existsErr error
 }
 
-func newMockPRRepository() *mockPRRepository {
-	return &mockPRRepository{
+func newMockPullRequestRepository() *mockPullRequestRepository {
+	return &mockPullRequestRepository{
 		prs: make(map[string]*domain.PullRequest),
 	}
 }
 
-func (m *mockPRRepository) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
+func (m *mockPullRequestRepository) CreatePR(ctx context.Context, pr *domain.PullRequest) error {
 	if m.createErr != nil {
 		return m.createErr
 	}
@@ -131,7 +131,7 @@ func (m *mockPRRepository) CreatePR(ctx context.Context, pr *domain.PullRequest)
 	return nil
 }
 
-func (m *mockPRRepository) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
+func (m *mockPullRequestRepository) GetPR(ctx context.Context, prID string) (*domain.PullRequest, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
@@ -142,7 +142,7 @@ func (m *mockPRRepository) GetPR(ctx context.Context, prID string) (*domain.Pull
 	return pr, nil
 }
 
-func (m *mockPRRepository) UpdatePR(ctx context.Context, pr *domain.PullRequest) error {
+func (m *mockPullRequestRepository) UpdatePR(ctx context.Context, pr *domain.PullRequest) error {
 	if m.updateErr != nil {
 		return m.updateErr
 	}
@@ -153,7 +153,7 @@ func (m *mockPRRepository) UpdatePR(ctx context.Context, pr *domain.PullRequest)
 	return nil
 }
 
-func (m *mockPRRepository) PRExists(ctx context.Context, prID string) (bool, error) {
+func (m *mockPullRequestRepository) PRExists(ctx context.Context, prID string) (bool, error) {
 	if m.existsErr != nil {
 		return false, m.existsErr
 	}
@@ -161,7 +161,7 @@ func (m *mockPRRepository) PRExists(ctx context.Context, prID string) (bool, err
 	return exists, nil
 }
 
-func (m *mockPRRepository) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
+func (m *mockPullRequestRepository) GetPRsByReviewer(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
@@ -177,7 +177,7 @@ func (m *mockPRRepository) GetPRsByReviewer(ctx context.Context, userID string) 
 	return prs, nil
 }
 
-func (m *mockPRRepository) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
+func (m *mockPullRequestRepository) GetUserAssignmentCounts(ctx context.Context) (map[string]int, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
@@ -190,7 +190,7 @@ func (m *mockPRRepository) GetUserAssignmentCounts(ctx context.Context) (map[str
 	return counts, nil
 }
 
-func (m *mockPRRepository) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
+func (m *mockPullRequestRepository) GetPRReviewerCounts(ctx context.Context) (map[string]int, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}

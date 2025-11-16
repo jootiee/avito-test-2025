@@ -5,184 +5,194 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-func TestTeamService_CreateTeam_Success(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
+type TeamServiceTestSuite struct {
+	suite.Suite
+	ctx context.Context
+}
 
-	ctx := context.Background()
-	teamName := "backend"
-	members := []domain.User{
-		{UserID: "user1", Username: "alice", IsActive: true},
-		{UserID: "user2", Username: "bob", IsActive: true},
+func (s *TeamServiceTestSuite) SetupTest() {
+	s.ctx = context.Background()
+}
+
+func (s *TeamServiceTestSuite) TestCreate() {
+	type args struct {
+		teamName string
+		members  []domain.User
+	}
+	type setupResult struct {
+		svc      *TeamService
+		teamRepo *mockTeamRepository
+		userRepo *mockUserRepository
 	}
 
-	team, err := service.CreateTeam(ctx, teamName, members)
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	tests := []struct {
+		name       string
+		args       args
+		setup      func() setupResult
+		assertFunc func(t *testing.T, team *domain.Team, err error, sr setupResult)
+	}{
+		{
+			name: "success",
+			args: args{
+				teamName: "backend",
+				members: []domain.User{
+					{UserID: "user1", Username: "alice", IsActive: true},
+					{UserID: "user2", Username: "bob", IsActive: true},
+				},
+			},
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+				assert.NoError(t, err)
+				assert.NotNil(t, team)
+				assert.Equal(t, "backend", team.TeamName)
+				assert.Len(t, team.Members, 2)
+				// Verify users upserted with correct team name
+				for _, member := range team.Members {
+					user, uerr := sr.userRepo.GetUser(context.Background(), member.UserID)
+					assert.NoError(t, uerr)
+					assert.Equal(t, "backend", user.TeamName)
+				}
+			},
+		},
+		{
+			name: "team already exists",
+			args: args{teamName: "backend", members: []domain.User{{UserID: "user1", Username: "alice", IsActive: true}}},
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				userRepo := newMockUserRepository()
+				svc := NewTeamService(teamRepo, userRepo)
+				// Pre-create team
+				_, _ = svc.Create(context.Background(), "backend", []domain.User{{UserID: "user1", Username: "alice", IsActive: true}})
+				return setupResult{svc: svc, teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+				assert.Error(t, err)
+				assert.Nil(t, team)
+				assert.Equal(t, "team already exists", err.Error())
+			},
+		},
+		{
+			name: "repository error on create",
+			args: args{teamName: "backend", members: []domain.User{{UserID: "user1", Username: "alice", IsActive: true}}},
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				teamRepo.createErr = errors.New("database error")
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+				assert.Error(t, err)
+				assert.Nil(t, team)
+				assert.Equal(t, "database error", err.Error())
+			},
+		},
+		{
+			name: "upsert user error",
+			args: args{teamName: "backend", members: []domain.User{{UserID: "user1", Username: "alice", IsActive: true}}},
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				userRepo := newMockUserRepository()
+				userRepo.upsertErr = errors.New("user insert failed")
+				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error, sr setupResult) {
+				assert.Error(t, err)
+				assert.Nil(t, team)
+				assert.Equal(t, "user insert failed", err.Error())
+			},
+		},
 	}
 
-	if team == nil {
-		t.Fatal("expected team to be returned")
-	}
-
-	if team.TeamName != teamName {
-		t.Errorf("expected team name %s, got %s", teamName, team.TeamName)
-	}
-
-	if len(team.Members) != 2 {
-		t.Errorf("expected 2 members, got %d", len(team.Members))
-	}
-
-	// Verify users were upserted with correct team name
-	for _, member := range members {
-		user, err := userRepo.GetUser(ctx, member.UserID)
-		if err != nil {
-			t.Errorf("expected user %s to exist", member.UserID)
-		}
-		if user.TeamName != teamName {
-			t.Errorf("expected user team name %s, got %s", teamName, user.TeamName)
-		}
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			team, err := sr.svc.Create(context.Background(), tt.args.teamName, tt.args.members)
+			tt.assertFunc(s.T(), team, err, sr)
+		})
 	}
 }
 
-func TestTeamService_CreateTeam_AlreadyExists(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-	teamName := "backend"
-	members := []domain.User{
-		{UserID: "user1", Username: "alice", IsActive: true},
+func (s *TeamServiceTestSuite) TestGet() {
+	type setupResult struct {
+		svc      *TeamService
+		teamRepo *mockTeamRepository
+		userRepo *mockUserRepository
 	}
 
-	// Create team first time
-	_, err := service.CreateTeam(ctx, teamName, members)
-	if err != nil {
-		t.Fatalf("first create should succeed, got %v", err)
+	tests := []struct {
+		name       string
+		teamName   string
+		setup      func() setupResult
+		assertFunc func(t *testing.T, team *domain.Team, err error)
+	}{
+		{
+			name:     "success",
+			teamName: "backend",
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				userRepo := newMockUserRepository()
+				svc := NewTeamService(teamRepo, userRepo)
+				_, _ = svc.Create(context.Background(), "backend", []domain.User{{UserID: "user1", Username: "alice", IsActive: true}})
+				return setupResult{svc: svc, teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, team)
+				assert.Equal(t, "backend", team.TeamName)
+			},
+		},
+		{
+			name:     "not found",
+			teamName: "nonexistent",
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, team)
+				assert.Equal(t, "team not found", err.Error())
+			},
+		},
+		{
+			name:     "repository error",
+			teamName: "backend",
+			setup: func() setupResult {
+				teamRepo := newMockTeamRepository()
+				teamRepo.getErr = errors.New("database error")
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewTeamService(teamRepo, userRepo), teamRepo: teamRepo, userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, team *domain.Team, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, team)
+				assert.Equal(t, "database error", err.Error())
+			},
+		},
 	}
 
-	// Try to create same team again
-	_, err = service.CreateTeam(ctx, teamName, members)
-	if err == nil {
-		t.Fatal("expected error when creating duplicate team")
-	}
-
-	if err.Error() != "team already exists" {
-		t.Errorf("expected 'team already exists' error, got %v", err)
-	}
-}
-
-func TestTeamService_CreateTeam_RepositoryError(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	teamRepo.createErr = errors.New("database error")
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-	teamName := "backend"
-	members := []domain.User{
-		{UserID: "user1", Username: "alice", IsActive: true},
-	}
-
-	_, err := service.CreateTeam(ctx, teamName, members)
-
-	if err == nil {
-		t.Fatal("expected error from repository")
-	}
-
-	if err.Error() != "database error" {
-		t.Errorf("expected 'database error', got %v", err)
-	}
-}
-
-func TestTeamService_CreateTeam_UpsertUserError(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	userRepo := newMockUserRepository()
-	userRepo.upsertErr = errors.New("user insert failed")
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-	teamName := "backend"
-	members := []domain.User{
-		{UserID: "user1", Username: "alice", IsActive: true},
-	}
-
-	_, err := service.CreateTeam(ctx, teamName, members)
-
-	if err == nil {
-		t.Fatal("expected error when upserting user")
-	}
-
-	if err.Error() != "user insert failed" {
-		t.Errorf("expected 'user insert failed', got %v", err)
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			team, err := sr.svc.Get(context.Background(), tt.teamName)
+			tt.assertFunc(s.T(), team, err)
+		})
 	}
 }
 
-func TestTeamService_GetTeam_Success(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-	teamName := "backend"
-	members := []domain.User{
-		{UserID: "user1", Username: "alice", IsActive: true},
-	}
-
-	// Create team first
-	createdTeam, _ := service.CreateTeam(ctx, teamName, members)
-
-	// Get team
-	team, err := service.GetTeam(ctx, teamName)
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if team.TeamName != createdTeam.TeamName {
-		t.Errorf("expected team name %s, got %s", createdTeam.TeamName, team.TeamName)
-	}
-}
-
-func TestTeamService_GetTeam_NotFound(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-
-	_, err := service.GetTeam(ctx, "nonexistent")
-
-	if err == nil {
-		t.Fatal("expected error for nonexistent team")
-	}
-
-	if err.Error() != "team not found" {
-		t.Errorf("expected 'team not found', got %v", err)
-	}
-}
-
-func TestTeamService_GetTeam_RepositoryError(t *testing.T) {
-	teamRepo := newMockTeamRepository()
-	teamRepo.getErr = errors.New("database error")
-	userRepo := newMockUserRepository()
-	service := NewTeamService(teamRepo, userRepo)
-
-	ctx := context.Background()
-
-	_, err := service.GetTeam(ctx, "backend")
-
-	if err == nil {
-		t.Fatal("expected repository error")
-	}
-
-	if err.Error() != "database error" {
-		t.Errorf("expected 'database error', got %v", err)
-	}
+func TestTeamService(t *testing.T) {
+	suite.Run(t, new(TeamServiceTestSuite))
 }

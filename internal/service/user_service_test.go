@@ -5,229 +5,221 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/jootiee/avito-test-2025/internal/domain"
 )
 
-func TestUserService_SetUserActive_Success(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
+type UserServiceTestSuite struct {
+	suite.Suite
+	ctx context.Context
+}
 
-	ctx := context.Background()
+func (s *UserServiceTestSuite) SetupTest() {
+	s.ctx = context.Background()
+}
 
-	// Setup existing user
-	user := &domain.User{
-		UserID:   "user1",
-		Username: "alice",
-		TeamName: "backend",
-		IsActive: true,
+func (s *UserServiceTestSuite) TestSetActive() {
+
+	type args struct {
+		userID   string
+		isActive bool
 	}
-	userRepo.UpsertUser(ctx, user)
-
-	// Set user inactive
-	updatedUser, err := service.SetUserActive(ctx, "user1", false)
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	type setupResult struct {
+		svc      *UserService
+		userRepo *mockUserRepository
 	}
 
-	if updatedUser.IsActive {
-		t.Error("expected user to be inactive")
+	tests := []struct {
+		name       string
+		args       args
+		setup      func() setupResult
+		assertFunc func(t *testing.T, user *domain.User, err error, sr setupResult)
+	}{
+		{
+			name: "success",
+			args: args{userID: "user1", isActive: false},
+			setup: func() setupResult {
+				userRepo := newMockUserRepository()
+				_ = userRepo.UpsertUser(context.Background(), &domain.User{UserID: "user1", Username: "alice", TeamName: "backend", IsActive: true})
+				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, user *domain.User, err error, sr setupResult) {
+				assert.NoError(t, err)
+				assert.NotNil(t, user)
+				assert.False(t, user.IsActive)
+				// Verify in repository
+				storedUser, _ := sr.userRepo.GetUser(context.Background(), "user1")
+				assert.False(t, storedUser.IsActive)
+			},
+		},
+		{
+			name: "user not found",
+			args: args{userID: "nonexistent", isActive: false},
+			setup: func() setupResult {
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, user *domain.User, err error, sr setupResult) {
+				assert.Error(t, err)
+				assert.Nil(t, user)
+				assert.Equal(t, "user not found", err.Error())
+			},
+		},
+		{
+			name: "repository error",
+			args: args{userID: "user1", isActive: false},
+			setup: func() setupResult {
+				userRepo := newMockUserRepository()
+				_ = userRepo.UpsertUser(context.Background(), &domain.User{UserID: "user1", Username: "alice", TeamName: "backend", IsActive: true})
+				userRepo.setActiveErr = errors.New("database error")
+				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, user *domain.User, err error, sr setupResult) {
+				assert.Error(t, err)
+				assert.Nil(t, user)
+				assert.Equal(t, "database error", err.Error())
+			},
+		},
 	}
 
-	// Verify in repository
-	storedUser, _ := userRepo.GetUser(ctx, "user1")
-	if storedUser.IsActive {
-		t.Error("expected stored user to be inactive")
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			user, err := sr.svc.SetActive(s.ctx, tt.args.userID, tt.args.isActive)
+			tt.assertFunc(s.T(), user, err, sr)
+		})
 	}
 }
 
-func TestUserService_SetUserActive_UserNotFound(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
+func (s *UserServiceTestSuite) TestGet() {
 
-	ctx := context.Background()
-
-	_, err := service.SetUserActive(ctx, "nonexistent", false)
-
-	if err == nil {
-		t.Fatal("expected error for nonexistent user")
+	type setupResult struct {
+		svc      *UserService
+		userRepo *mockUserRepository
 	}
 
-	if err.Error() != "user not found" {
-		t.Errorf("expected 'user not found', got %v", err)
-	}
-}
-
-func TestUserService_SetUserActive_RepositoryError(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
-
-	ctx := context.Background()
-
-	// Setup existing user
-	user := &domain.User{
-		UserID:   "user1",
-		Username: "alice",
-		TeamName: "backend",
-		IsActive: true,
-	}
-	userRepo.UpsertUser(ctx, user)
-
-	// Inject error
-	userRepo.setActiveErr = errors.New("database error")
-
-	_, err := service.SetUserActive(ctx, "user1", false)
-
-	if err == nil {
-		t.Fatal("expected repository error")
-	}
-
-	if err.Error() != "database error" {
-		t.Errorf("expected 'database error', got %v", err)
-	}
-}
-
-func TestUserService_GetUser_Success(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
-
-	ctx := context.Background()
-
-	// Setup existing user
-	user := &domain.User{
-		UserID:   "user1",
-		Username: "alice",
-		TeamName: "backend",
-		IsActive: true,
-	}
-	userRepo.UpsertUser(ctx, user)
-
-	retrievedUser, err := service.GetUser(ctx, "user1")
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	tests := []struct {
+		name       string
+		userID     string
+		setup      func() setupResult
+		assertFunc func(t *testing.T, user *domain.User, err error)
+	}{
+		{
+			name:   "success",
+			userID: "user1",
+			setup: func() setupResult {
+				userRepo := newMockUserRepository()
+				_ = userRepo.UpsertUser(context.Background(), &domain.User{UserID: "user1", Username: "alice", TeamName: "backend", IsActive: true})
+				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, user *domain.User, err error) {
+				assert.NoError(t, err)
+				assert.NotNil(t, user)
+				assert.Equal(t, "user1", user.UserID)
+				assert.Equal(t, "alice", user.Username)
+			},
+		},
+		{
+			name:   "not found",
+			userID: "nonexistent",
+			setup: func() setupResult {
+				userRepo := newMockUserRepository()
+				return setupResult{svc: NewUserService(userRepo, newMockPullRequestRepository()), userRepo: userRepo}
+			},
+			assertFunc: func(t *testing.T, user *domain.User, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, user)
+				assert.Equal(t, "user not found", err.Error())
+			},
+		},
 	}
 
-	if retrievedUser.UserID != "user1" {
-		t.Errorf("expected user ID 'user1', got %s", retrievedUser.UserID)
-	}
-
-	if retrievedUser.Username != "alice" {
-		t.Errorf("expected username 'alice', got %s", retrievedUser.Username)
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			user, err := sr.svc.Get(s.ctx, tt.userID)
+			tt.assertFunc(s.T(), user, err)
+		})
 	}
 }
 
-func TestUserService_GetUser_NotFound(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
+func (s *UserServiceTestSuite) TestGetReviews() {
 
-	ctx := context.Background()
-
-	_, err := service.GetUser(ctx, "nonexistent")
-
-	if err == nil {
-		t.Fatal("expected error for nonexistent user")
+	type setupResult struct {
+		svc    *UserService
+		prRepo *mockPullRequestRepository
 	}
 
-	if err.Error() != "user not found" {
-		t.Errorf("expected 'user not found', got %v", err)
-	}
-}
-
-func TestUserService_GetUserReviews_Success(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
-
-	ctx := context.Background()
-
-	// Setup PRs
-	pr1 := &domain.PullRequest{
-		PullRequestID:     "pr1",
-		PullRequestName:   "Feature A",
-		AuthorID:          "author1",
-		Status:            domain.PRStatusOpen,
-		AssignedReviewers: []string{"user1", "user2"},
-	}
-	pr2 := &domain.PullRequest{
-		PullRequestID:     "pr2",
-		PullRequestName:   "Feature B",
-		AuthorID:          "author2",
-		Status:            domain.PRStatusOpen,
-		AssignedReviewers: []string{"user1"},
-	}
-	pr3 := &domain.PullRequest{
-		PullRequestID:     "pr3",
-		PullRequestName:   "Feature C",
-		AuthorID:          "author1",
-		Status:            domain.PRStatusOpen,
-		AssignedReviewers: []string{"user3"},
-	}
-
-	prRepo.CreatePR(ctx, pr1)
-	prRepo.CreatePR(ctx, pr2)
-	prRepo.CreatePR(ctx, pr3)
-
-	// Get reviews for user1
-	prs, err := service.GetUserReviews(ctx, "user1")
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if len(prs) != 2 {
-		t.Errorf("expected 2 PRs for user1, got %d", len(prs))
-	}
-
-	// Verify correct PRs are returned
-	prIDs := make(map[string]bool)
-	for _, pr := range prs {
-		prIDs[pr.PullRequestID] = true
-	}
-
-	if !prIDs["pr1"] || !prIDs["pr2"] {
-		t.Error("expected pr1 and pr2 to be returned")
-	}
-}
-
-func TestUserService_GetUserReviews_Empty(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	service := NewUserService(userRepo, prRepo)
-
-	ctx := context.Background()
-
-	prs, err := service.GetUserReviews(ctx, "user1")
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	tests := []struct {
+		name       string
+		userID     string
+		setup      func() setupResult
+		assertFunc func(t *testing.T, prs []*domain.PullRequest, err error)
+	}{
+		{
+			name:   "success with multiple PRs",
+			userID: "user1",
+			setup: func() setupResult {
+				prRepo := newMockPullRequestRepository()
+				ctx := context.Background()
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr1", PullRequestName: "Feature A", AuthorID: "author1", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user1", "user2"}})
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr2", PullRequestName: "Feature B", AuthorID: "author2", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user1"}})
+				_ = prRepo.CreatePR(ctx, &domain.PullRequest{PullRequestID: "pr3", PullRequestName: "Feature C", AuthorID: "author1", Status: domain.PRStatusOpen, AssignedReviewers: []string{"user3"}})
+				return setupResult{svc: NewUserService(newMockUserRepository(), prRepo), prRepo: prRepo}
+			},
+			assertFunc: func(t *testing.T, prs []*domain.PullRequest, err error) {
+				assert.NoError(t, err)
+				assert.Len(t, prs, 2)
+				prIDs := make(map[string]bool)
+				for _, pr := range prs {
+					prIDs[pr.PullRequestID] = true
+				}
+				assert.True(t, prIDs["pr1"], "expected pr1 in results")
+				assert.True(t, prIDs["pr2"], "expected pr2 in results")
+			},
+		},
+		{
+			name:   "empty result",
+			userID: "user1",
+			setup: func() setupResult {
+				prRepo := newMockPullRequestRepository()
+				return setupResult{svc: NewUserService(newMockUserRepository(), prRepo), prRepo: prRepo}
+			},
+			assertFunc: func(t *testing.T, prs []*domain.PullRequest, err error) {
+				assert.NoError(t, err)
+				assert.Empty(t, prs)
+			},
+		},
+		{
+			name:   "repository error",
+			userID: "user1",
+			setup: func() setupResult {
+				prRepo := newMockPullRequestRepository()
+				prRepo.getErr = errors.New("database error")
+				return setupResult{svc: NewUserService(newMockUserRepository(), prRepo), prRepo: prRepo}
+			},
+			assertFunc: func(t *testing.T, prs []*domain.PullRequest, err error) {
+				assert.Error(t, err)
+				assert.Nil(t, prs)
+				assert.Equal(t, "database error", err.Error())
+			},
+		},
 	}
 
-	if len(prs) != 0 {
-		t.Errorf("expected 0 PRs, got %d", len(prs))
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			sr := tt.setup()
+			prs, err := sr.svc.GetReviews(s.ctx, tt.userID)
+			tt.assertFunc(s.T(), prs, err)
+		})
 	}
 }
 
-func TestUserService_GetUserReviews_RepositoryError(t *testing.T) {
-	userRepo := newMockUserRepository()
-	prRepo := newMockPRRepository()
-	prRepo.getErr = errors.New("database error")
-	service := NewUserService(userRepo, prRepo)
-
-	ctx := context.Background()
-
-	_, err := service.GetUserReviews(ctx, "user1")
-
-	if err == nil {
-		t.Fatal("expected repository error")
-	}
-
-	if err.Error() != "database error" {
-		t.Errorf("expected 'database error', got %v", err)
-	}
+func TestUserService(t *testing.T) {
+	suite.Run(t, new(UserServiceTestSuite))
 }

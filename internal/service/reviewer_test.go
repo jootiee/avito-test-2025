@@ -2,217 +2,172 @@ package service
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestSelectRandomReviewers_EmptyCandidates(t *testing.T) {
-	candidates := []string{}
-	result := SelectRandomReviewers(candidates, 2)
+type ReviewerTestSuite struct {
+	suite.Suite
+}
 
-	if len(result) != 0 {
-		t.Errorf("expected empty result, got %d reviewers", len(result))
+func (s *ReviewerTestSuite) TestSelectRandom() {
+
+	type args struct {
+		candidates []string
+		max        int
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		assertFunc func(t *testing.T, got []string, candidates []string, max int)
+	}{
+		{
+			name: "empty candidates",
+			args: args{candidates: []string{}, max: 2},
+			assertFunc: func(t *testing.T, got []string, _ []string, _ int) {
+				assert.Len(t, got, 0)
+			},
+		},
+		{
+			name: "less than max returns all (permutation)",
+			args: args{candidates: []string{"user1", "user2"}, max: 5},
+			assertFunc: func(t *testing.T, got []string, candidates []string, _ int) {
+				assert.Len(t, got, 2)
+				assert.ElementsMatch(t, candidates, got)
+			},
+		},
+		{
+			name: "exactly max returns all (permutation)",
+			args: args{candidates: []string{"user1", "user2", "user3"}, max: 3},
+			assertFunc: func(t *testing.T, got []string, candidates []string, _ int) {
+				assert.Len(t, got, 3)
+				assert.ElementsMatch(t, candidates, got)
+			},
+		},
+		{
+			name: "more than max returns unique subset",
+			args: args{candidates: []string{"user1", "user2", "user3", "user4", "user5"}, max: 2},
+			assertFunc: func(t *testing.T, got []string, candidates []string, max int) {
+				assert.Len(t, got, max)
+				// ensure subset of candidates and no duplicates
+				seen := map[string]struct{}{}
+				valid := map[string]struct{}{}
+				for _, c := range candidates {
+					valid[c] = struct{}{}
+				}
+				for _, r := range got {
+					if _, ok := valid[r]; !ok {
+						t.Fatalf("returned reviewer %s not in candidates", r)
+					}
+					if _, dup := seen[r]; dup {
+						t.Fatalf("duplicate reviewer %s in result", r)
+					}
+					seen[r] = struct{}{}
+				}
+			},
+		},
+		{
+			name: "max zero returns empty",
+			args: args{candidates: []string{"user1", "user2", "user3"}, max: 0},
+			assertFunc: func(t *testing.T, got []string, _ []string, _ int) {
+				assert.Empty(t, got)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			got := SelectRandomReviewers(tt.args.candidates, tt.args.max)
+			tt.assertFunc(s.T(), got, tt.args.candidates, tt.args.max)
+		})
 	}
 }
 
-func TestSelectRandomReviewers_LessThanMax(t *testing.T) {
-	candidates := []string{"user1", "user2"}
-	result := SelectRandomReviewers(candidates, 5)
+func (s *ReviewerTestSuite) TestFilterActiveCandidates() {
 
-	if len(result) != 2 {
-		t.Errorf("expected 2 reviewers, got %d", len(result))
+	type args struct {
+		users     []string
+		activeMap map[string]bool
+		exclude   []string
 	}
 
-	// Verify all candidates are in result
-	resultSet := make(map[string]bool)
-	for _, r := range result {
-		resultSet[r] = true
+	tests := []struct {
+		name     string
+		args     args
+		expected []string
+	}{
+		{
+			name: "all active",
+			args: args{
+				users:     []string{"user1", "user2", "user3"},
+				activeMap: map[string]bool{"user1": true, "user2": true, "user3": true},
+			},
+			expected: []string{"user1", "user2", "user3"},
+		},
+		{
+			name: "some inactive",
+			args: args{
+				users:     []string{"user1", "user2", "user3", "user4"},
+				activeMap: map[string]bool{"user1": true, "user2": false, "user3": true, "user4": false},
+			},
+			expected: []string{"user1", "user3"},
+		},
+		{
+			name: "with exclusions",
+			args: args{
+				users:     []string{"user1", "user2", "user3", "user4"},
+				activeMap: map[string]bool{"user1": true, "user2": true, "user3": true, "user4": true},
+				exclude:   []string{"user1", "user3"},
+			},
+			expected: []string{"user2", "user4"},
+		},
+		{
+			name: "exclude inactive and specific",
+			args: args{
+				users:     []string{"user1", "user2", "user3", "user4", "user5"},
+				activeMap: map[string]bool{"user1": true, "user2": false, "user3": true, "user4": true, "user5": false},
+				exclude:   []string{"user3"},
+			},
+			expected: []string{"user1", "user4"},
+		},
+		{
+			name: "empty result when all inactive",
+			args: args{
+				users:     []string{"user1", "user2"},
+				activeMap: map[string]bool{"user1": false, "user2": false},
+			},
+			expected: []string{},
+		},
+		{
+			name: "user not in active map excluded",
+			args: args{
+				users:     []string{"user1", "user2", "user3"},
+				activeMap: map[string]bool{"user1": true, "user2": true},
+			},
+			expected: []string{"user1", "user2"},
+		},
+		{
+			name: "empty input",
+			args: args{
+				users:     []string{},
+				activeMap: map[string]bool{"user1": true},
+			},
+			expected: []string{},
+		},
 	}
 
-	for _, c := range candidates {
-		if !resultSet[c] {
-			t.Errorf("expected %s in result", c)
-		}
-	}
-}
-
-func TestSelectRandomReviewers_ExactlyMax(t *testing.T) {
-	candidates := []string{"user1", "user2", "user3"}
-	result := SelectRandomReviewers(candidates, 3)
-
-	if len(result) != 3 {
-		t.Errorf("expected 3 reviewers, got %d", len(result))
-	}
-}
-
-func TestSelectRandomReviewers_MoreThanMax(t *testing.T) {
-	candidates := []string{"user1", "user2", "user3", "user4", "user5"}
-	result := SelectRandomReviewers(candidates, 2)
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 reviewers, got %d", len(result))
-	}
-
-	// Verify all returned reviewers are from candidates
-	candidatesSet := make(map[string]bool)
-	for _, c := range candidates {
-		candidatesSet[c] = true
-	}
-
-	for _, r := range result {
-		if !candidatesSet[r] {
-			t.Errorf("returned reviewer %s not in candidates", r)
-		}
-	}
-
-	// Verify no duplicates
-	seen := make(map[string]bool)
-	for _, r := range result {
-		if seen[r] {
-			t.Errorf("duplicate reviewer %s in result", r)
-		}
-		seen[r] = true
-	}
-}
-
-func TestSelectRandomReviewers_MaxZero(t *testing.T) {
-	candidates := []string{"user1", "user2", "user3"}
-	result := SelectRandomReviewers(candidates, 0)
-
-	if len(result) != 0 {
-		t.Errorf("expected 0 reviewers for max=0, got %d", len(result))
-	}
-}
-
-func TestFilterActiveCandidates_AllActive(t *testing.T) {
-	users := []string{"user1", "user2", "user3"}
-	activeMap := map[string]bool{
-		"user1": true,
-		"user2": true,
-		"user3": true,
-	}
-
-	result := FilterActiveCandidates(users, activeMap)
-
-	if len(result) != 3 {
-		t.Errorf("expected 3 active users, got %d", len(result))
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			got := FilterActiveCandidates(tt.args.users, tt.args.activeMap, tt.args.exclude...)
+			assert.ElementsMatch(s.T(), tt.expected, got)
+		})
 	}
 }
 
-func TestFilterActiveCandidates_SomeInactive(t *testing.T) {
-	users := []string{"user1", "user2", "user3", "user4"}
-	activeMap := map[string]bool{
-		"user1": true,
-		"user2": false,
-		"user3": true,
-		"user4": false,
-	}
-
-	result := FilterActiveCandidates(users, activeMap)
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 active users, got %d", len(result))
-	}
-
-	// Verify only active users are returned
-	for _, userID := range result {
-		if !activeMap[userID] {
-			t.Errorf("inactive user %s should not be in result", userID)
-		}
-	}
-}
-
-func TestFilterActiveCandidates_WithExclusions(t *testing.T) {
-	users := []string{"user1", "user2", "user3", "user4"}
-	activeMap := map[string]bool{
-		"user1": true,
-		"user2": true,
-		"user3": true,
-		"user4": true,
-	}
-
-	result := FilterActiveCandidates(users, activeMap, "user1", "user3")
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 users after exclusions, got %d", len(result))
-	}
-
-	// Verify excluded users are not in result
-	for _, userID := range result {
-		if userID == "user1" || userID == "user3" {
-			t.Errorf("excluded user %s should not be in result", userID)
-		}
-	}
-}
-
-func TestFilterActiveCandidates_ExcludeInactiveAndSpecific(t *testing.T) {
-	users := []string{"user1", "user2", "user3", "user4", "user5"}
-	activeMap := map[string]bool{
-		"user1": true,
-		"user2": false,
-		"user3": true,
-		"user4": true,
-		"user5": false,
-	}
-
-	result := FilterActiveCandidates(users, activeMap, "user3")
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 users (active, not excluded), got %d", len(result))
-	}
-
-	// Verify result contains only user1 and user4
-	expectedSet := map[string]bool{"user1": true, "user4": true}
-	for _, userID := range result {
-		if !expectedSet[userID] {
-			t.Errorf("unexpected user %s in result", userID)
-		}
-	}
-}
-
-func TestFilterActiveCandidates_EmptyResult(t *testing.T) {
-	users := []string{"user1", "user2"}
-	activeMap := map[string]bool{
-		"user1": false,
-		"user2": false,
-	}
-
-	result := FilterActiveCandidates(users, activeMap)
-
-	if len(result) != 0 {
-		t.Errorf("expected 0 users when all inactive, got %d", len(result))
-	}
-}
-
-func TestFilterActiveCandidates_UserNotInActiveMap(t *testing.T) {
-	users := []string{"user1", "user2", "user3"}
-	activeMap := map[string]bool{
-		"user1": true,
-		"user2": true,
-		// user3 not in map
-	}
-
-	result := FilterActiveCandidates(users, activeMap)
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 users (only those in active map), got %d", len(result))
-	}
-
-	// user3 should not be in result as it's not in activeMap
-	for _, userID := range result {
-		if userID == "user3" {
-			t.Error("user3 should not be in result when not in activeMap")
-		}
-	}
-}
-
-func TestFilterActiveCandidates_EmptyInput(t *testing.T) {
-	users := []string{}
-	activeMap := map[string]bool{
-		"user1": true,
-	}
-
-	result := FilterActiveCandidates(users, activeMap)
-
-	if len(result) != 0 {
-		t.Errorf("expected 0 users for empty input, got %d", len(result))
-	}
+func TestReviewer(t *testing.T) {
+	suite.Run(t, new(ReviewerTestSuite))
 }

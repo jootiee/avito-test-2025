@@ -25,8 +25,8 @@ func NewUserService(
 	}
 }
 
-// SetUserActive updates a user's active status
-func (s *UserService) SetUserActive(ctx context.Context, userID string, isActive bool) (*domain.User, error) {
+// SetActive updates a user's active status
+func (s *UserService) SetActive(ctx context.Context, userID string, isActive bool) (*domain.User, error) {
 	user, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -43,8 +43,8 @@ func (s *UserService) SetUserActive(ctx context.Context, userID string, isActive
 	return user, nil
 }
 
-// GetUser retrieves a user by ID
-func (s *UserService) GetUser(ctx context.Context, userID string) (*domain.User, error) {
+// Get retrieves a user by ID
+func (s *UserService) Get(ctx context.Context, userID string) (*domain.User, error) {
 	user, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -55,8 +55,8 @@ func (s *UserService) GetUser(ctx context.Context, userID string) (*domain.User,
 	return user, nil
 }
 
-// GetUserReviews retrieves all PRs where user is assigned as reviewer
-func (s *UserService) GetUserReviews(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
+// GetReviews retrieves all PRs where user is assigned as reviewer
+func (s *UserService) GetReviews(ctx context.Context, userID string) ([]*domain.PullRequest, error) {
 	prs, err := s.pullRequestRepo.GetPRsByReviewer(ctx, userID)
 	if err != nil {
 		return nil, err
