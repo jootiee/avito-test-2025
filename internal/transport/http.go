@@ -43,11 +43,6 @@ func StartHTTPServer() {
 		log.Error("Failed to initialize storage", "error", err.Error())
 		return
 	}
-	defer func() {
-		if store != nil {
-			store.Close()
-		}
-	}()
 
 	log.Info("Connected to storage")
 
@@ -76,12 +71,16 @@ func StartHTTPServer() {
 	case <-ctx.Done():
 		log.Info("Shutting down server gracefully...")
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			log.Error("Server shutdown error", "error", err)
-			return
+		}
+
+		log.Info("Closing database connections...")
+		if err := store.Close(); err != nil {
+			log.Error("Database close error", "error", err)
 		}
 
 		log.Info("Server stopped gracefully")
