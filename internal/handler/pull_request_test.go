@@ -203,6 +203,6 @@ func (s *PullRequestHandlerTestSuite) TestEndpoints() {
 	}
 }
 
-func TestPRHandler(t *testing.T) {
+func TestPullRequestHandler(t *testing.T) {
 	suite.Run(t, new(PullRequestHandlerTestSuite))
 }
